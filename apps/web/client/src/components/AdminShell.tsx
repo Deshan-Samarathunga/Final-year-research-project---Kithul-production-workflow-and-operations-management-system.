@@ -49,11 +49,11 @@ const pageTitles: Record<string, string> = {
 function Sidebar({ open, currentPath, onClose }: { open: boolean; currentPath: string; onClose: () => void }) {
   return (
     <aside
-      className={`fixed bottom-4 left-4 top-[72px] z-30 w-[288px] rounded-md border border-slate-200 bg-white shadow-panel transition lg:static lg:z-auto lg:h-[calc(100vh-88px)] lg:translate-x-0 ${
+      className={`fixed bottom-4 left-4 top-[72px] z-30 flex w-[288px] flex-col overflow-hidden rounded-md border border-slate-200 bg-white shadow-panel transition lg:static lg:z-auto lg:h-full lg:min-h-0 lg:translate-x-0 ${
         open ? "translate-x-0" : "-translate-x-[120%]"
       }`}
     >
-      <div className="flex items-center justify-between border-b border-slate-200 px-3 py-3">
+      <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-3 py-3">
         <div>
           <p className="font-bold text-slate-950">KithulFlow</p>
           <p className="text-sm text-slate-600">Administration Portal</p>
@@ -67,7 +67,7 @@ function Sidebar({ open, currentPath, onClose }: { open: boolean; currentPath: s
           icon={<Menu className="h-6 w-6" />}
         />
       </div>
-      <nav className="h-[calc(100%-66px)] overflow-y-auto px-2 py-4">
+      <nav className="min-h-0 flex-1 overflow-y-auto px-2 py-4">
         {navSections.map((section) => (
           <div key={section.title} className="mb-5">
             <p className="mb-3 px-3 text-xs font-bold uppercase tracking-[0.35em] text-slate-600">{section.title}</p>
@@ -128,7 +128,7 @@ export function AdminShell({ displayName = "Admin User" }: { displayName?: strin
   const isField = location.pathname === "/admin/field-collection";
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-950">
+    <div className="h-screen overflow-hidden bg-slate-100 text-slate-950">
       <header className="fixed left-0 right-0 top-0 z-40 flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 shadow-sm">
         <div className="flex items-center gap-4">
           <Button
@@ -179,9 +179,9 @@ export function AdminShell({ displayName = "Admin User" }: { displayName?: strin
         <button className="fixed inset-0 z-20 bg-slate-900/20 lg:hidden" aria-label="Close sidebar" onClick={() => setSidebarOpen(false)} />
       ) : null}
 
-      <main className={`flex gap-4 px-4 pb-12 pt-[72px] ${isField ? "lg:block" : ""}`}>
+      <main className={`flex h-[calc(100vh-32px)] gap-4 overflow-hidden px-4 pb-4 pt-[72px] ${isField ? "lg:block" : ""}`}>
         {!isField ? <Sidebar open={sidebarOpen} currentPath={location.pathname} onClose={() => setSidebarOpen(false)} /> : null}
-        <div className="min-w-0 flex-1">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           {sidebarOpen && isField ? (
             <Button
               type="button"

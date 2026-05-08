@@ -22,7 +22,7 @@ export function DataTable<T>({
   rowKey: (row: T) => string | number;
 }) {
   return (
-    <div className="overflow-auto border-y border-slate-300">
+    <div className="min-h-0 flex-1 overflow-auto border-y border-slate-300">
       <table className="min-w-full border-collapse text-left text-sm">
         <thead className="bg-slate-100 text-xs uppercase tracking-[0.12em] text-slate-900">
           <tr>
