@@ -196,7 +196,7 @@ export function AdminShell({ displayName = "Admin User" }: { displayName?: strin
       </main>
       <footer className="fixed bottom-0 left-0 right-0 flex h-8 items-center justify-between border-t border-slate-200 bg-white px-8 text-xs text-slate-600">
         <span>2026 Kithul Flow Ops</span>
-        <span>v2.1.0</span>
+        <span>v1.0.0</span>
       </footer>
     </div>
   );
