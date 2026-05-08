@@ -7,10 +7,10 @@ KithulFlow is organized as a monorepo for the web admin app and the future mobil
 ```text
 apps/
   web/       # PERN administration portal
-  mobile/    # empty placeholder for the mobile app
+  mobile/    # Flutter offline-first field collector app
 ```
 
-The existing full-stack web app now lives in `apps/web`.
+The existing full-stack web app lives in `apps/web`. The Flutter mobile app lives in `apps/mobile`.
 
 ## Root Commands
 
@@ -34,10 +34,19 @@ npm.cmd run db:migrate
 npm.cmd run db:seed
 ```
 
+Useful mobile shortcuts:
+
+```powershell
+npm.cmd run mobile:pub
+npm.cmd run mobile:analyze
+npm.cmd run mobile:build:android
+npm.cmd run mobile:run
+```
+
 ## Web App
 
 See [apps/web/README.md](apps/web/README.md) for the web admin setup, database notes, seed scripts, and login details.
 
 ## Mobile App
 
-`apps/mobile` is intentionally empty for now. It is reserved for the future mobile app.
+See [apps/mobile/README.md](apps/mobile/README.md) for the Flutter offline-first field collector app.
