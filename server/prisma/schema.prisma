@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AdminUser {
+  id           Int      @id @default(autoincrement())
+  userId       String   @unique
+  email        String   @unique
+  displayName  String
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Employee {
+  id           Int      @id @default(autoincrement())
+  userId       String   @unique
+  fullName     String
+  role         String
+  status       String   @default("Active")
+  passwordHash String
+  defaultLogin Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Center {
+  id           Int         @id @default(autoincrement())
+  centerId     String      @unique
+  location     String
+  agent        String
+  contactPhone String?
+  status       String      @default("Active")
+  issueNotes   IssueNote[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model SystemCan {
+  id          Int          @id @default(autoincrement())
+  canCode     String       @unique
+  status      String       @default("In warehouse")
+  agentName   String?
+  reference   String?
+  lastUpdated DateTime     @default(now())
+  histories   CanHistory[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model CanHistory {
+  id        Int       @id @default(autoincrement())
+  canId     Int
+  can       SystemCan @relation(fields: [canId], references: [id], onDelete: Cascade)
+  status    String
+  agentName String?
+  reference String?
+  note      String?
+  createdAt DateTime  @default(now())
+
+  @@index([canId])
+}
+
+model IssueNote {
+  id             Int      @id @default(autoincrement())
+  issueNoteName  String
+  collectionDate DateTime
+  centerId       Int?
+  center         Center?  @relation(fields: [centerId], references: [id], onDelete: SetNull)
+  type           String
+  status         String   @default("Active")
+  canCount       Int      @default(0)
+  totalQty       Float    @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([status])
+}
