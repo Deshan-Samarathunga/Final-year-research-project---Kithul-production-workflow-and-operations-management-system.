@@ -1,0 +1,38 @@
+{
+  "name": "kithulflow-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "KithulFlow web and mobile monorepo",
+  "workspaces": [
+    "apps/web/client",
+    "apps/web/server"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace @kithulflow/server\" \"npm run dev --workspace @kithulflow/client\"",
+    "dev:server": "npm run dev --workspace @kithulflow/server",
+    "dev:client": "npm run dev --workspace @kithulflow/client",
+    "build": "npm run build --workspace @kithulflow/server && npm run build --workspace @kithulflow/client",
+    "test": "npm run test --workspace @kithulflow/server && npm run test --workspace @kithulflow/client",
+    "db:generate": "npm run prisma:generate --workspace @kithulflow/server",
+    "db:migrate": "npm run prisma:migrate --workspace @kithulflow/server",
+    "db:seed": "npm run prisma:seed --workspace @kithulflow/server",
+    "seed:admin": "npm run seed:admin --workspace @kithulflow/server",
+    "seed:employees": "npm run seed:employees --workspace @kithulflow/server",
+    "seed:centers": "npm run seed:centers --workspace @kithulflow/server",
+    "seed:cans": "npm run seed:cans --workspace @kithulflow/server",
+    "seed:issue-notes": "npm run seed:issue-notes --workspace @kithulflow/server",
+    "seed:local": "npm run seed:local --workspace @kithulflow/server",
+    "mobile:pub": "cd apps/mobile && flutter pub get",
+    "mobile:codegen": "cd apps/mobile && dart run build_runner build --delete-conflicting-outputs",
+    "mobile:analyze": "cd apps/mobile && flutter analyze",
+    "mobile:test": "cd apps/mobile && flutter test",
+    "mobile:build:android": "cd apps/mobile && flutter build apk --debug",
+    "mobile:run": "cd apps/mobile && flutter run"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
