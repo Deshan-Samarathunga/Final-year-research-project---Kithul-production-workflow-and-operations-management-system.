@@ -1,85 +1,43 @@
-# KithulFlow PERN Admin Panel
+# KithulFlow Platform
 
-Full-stack PERN administration portal for the KithulFlow operations screenshots.
+KithulFlow is organized as a monorepo for the web admin app and the future mobile app.
 
-## Stack
+## Structure
 
-- Local PostgreSQL
-- Express, Node.js, TypeScript, Prisma
-- React, Vite, TypeScript, TanStack Query, Tailwind CSS
-- HTTP-only JWT admin authentication
+```text
+apps/
+  web/       # PERN administration portal
+  mobile/    # empty placeholder for the mobile app
+```
 
-## Quick Start
+The existing full-stack web app now lives in `apps/web`.
 
-Run these commands from PowerShell in the project root. Use `npm.cmd` on Windows because PowerShell may block `npm.ps1`.
+## Root Commands
+
+Run these from the repository root:
 
 ```powershell
 npm.cmd install
-Copy-Item .env.example .env
-Copy-Item .env.example server\.env
-npm.cmd run db:generate
-npm.cmd run db:migrate
-npm.cmd run db:seed
 npm.cmd run dev
-```
-
-Before running Prisma migrations, create the local PostgreSQL database and user:
-
-```sql
-CREATE USER kithulflow WITH PASSWORD 'kithulflow';
-CREATE DATABASE kithulflow OWNER kithulflow;
-GRANT ALL PRIVILEGES ON DATABASE kithulflow TO kithulflow;
-```
-
-If you are using pgAdmin, open **Tools > Query Tool** on the default `postgres` database and run the SQL above. If the user already exists, run this instead:
-
-```sql
-ALTER USER kithulflow WITH PASSWORD 'kithulflow';
-CREATE DATABASE kithulflow OWNER kithulflow;
-GRANT ALL PRIVILEGES ON DATABASE kithulflow TO kithulflow;
-```
-
-The backend and Prisma expect this connection string in `server\.env`:
-
-```env
-DATABASE_URL="postgresql://kithulflow:kithulflow@localhost:5432/kithulflow?schema=public"
-```
-
-Open `http://localhost:5173`.
-
-Seeded admin login:
-
-- User ID: `admin`
-- Password: `Admin@12345`
-
-## Useful Scripts
-
-```bash
-npm.cmd run dev          # start API and Vite dev server
-npm.cmd run build        # type-check and build server/client
-npm.cmd run test         # run backend and frontend tests
-npm.cmd run db:migrate   # apply Prisma migrations
-npm.cmd run db:seed      # seed screenshot-style data
-npm.cmd run seed:local   # seed local data through modular scripts
-```
-
-The scoped admin pages are Dashboard, Employees, Centers, System Cans, and Field Collection. Other sidebar modules are visual placeholders for the next phase.
-
-## Database Reference Files
-
-The root `db/` folder contains SQL reference files for the full schema, module-level schema slices, migration snapshots, and verification queries. Prisma remains the normal migration runner under `server/prisma`.
-
-## Local Seed Scripts
-
-The `server/scripts/local/` folder contains smaller seed scripts for loading only the data group you need:
-
-```powershell
-npm.cmd run seed:admin
-npm.cmd run seed:employees
-npm.cmd run seed:centers
-npm.cmd run seed:cans
-npm.cmd run seed:issue-notes
+npm.cmd run build
+npm.cmd test
 npm.cmd run seed:local
 ```
 
-If seed scripts fail with `permission denied for table ...`, run `db/permissions/grant_kithulflow_app_user.sql` in pgAdmin while connected to the `kithulflow` database as `postgres`, then run the seed command again.
+Useful web-specific shortcuts still work from the root:
+
+```powershell
+npm.cmd run dev:server
+npm.cmd run dev:client
+npm.cmd run db:generate
+npm.cmd run db:migrate
+npm.cmd run db:seed
+```
+
+## Web App
+
+See [apps/web/README.md](apps/web/README.md) for the web admin setup, database notes, seed scripts, and login details.
+
+## Mobile App
+
+`apps/mobile` is intentionally empty for now. It is reserved for the future mobile app.
