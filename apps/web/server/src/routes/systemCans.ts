@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../db.js";
 import { asyncHandler, AppError, pagination } from "../utils/http.js";
@@ -25,28 +26,59 @@ function canOrderCode(canCode: string) {
   return match ? Number(match[0]) : Number.MAX_SAFE_INTEGER;
 }
 
+function parseDateFilter(value: unknown, endOfDay = false) {
+  const text = String(value ?? "").trim();
+  if (!text) return undefined;
+  const date = new Date(text);
+  if (Number.isNaN(date.getTime())) return undefined;
+  if (endOfDay) date.setHours(23, 59, 59, 999);
+  return date;
+}
+
 router.get(
   "/",
   asyncHandler(async (request, response) => {
     const { page, pageSize } = pagination(request.query);
     const search = String(request.query.search ?? "").trim();
-    const where = search
-      ? {
-          OR: [
-            { canCode: { contains: search, mode: "insensitive" as const } },
-            { status: { contains: search, mode: "insensitive" as const } },
-            { agentName: { contains: search, mode: "insensitive" as const } },
-            { reference: { contains: search, mode: "insensitive" as const } }
-          ]
-        }
-      : {};
+    const canCode = String(request.query.canCode ?? "").trim();
+    const status = String(request.query.status ?? "").trim();
+    const agentName = String(request.query.agentName ?? "").trim();
+    const reference = String(request.query.reference ?? "").trim();
+    const updatedFrom = parseDateFilter(request.query.updatedFrom);
+    const updatedTo = parseDateFilter(request.query.updatedTo, true);
+    const where: Prisma.SystemCanWhereInput = {
+      ...(search
+        ? {
+            OR: [
+              { canCode: { contains: search, mode: "insensitive" } },
+              { status: { contains: search, mode: "insensitive" } },
+              { agentName: { contains: search, mode: "insensitive" } },
+              { reference: { contains: search, mode: "insensitive" } }
+            ]
+          }
+        : {}),
+      ...(canCode ? { canCode: { contains: canCode, mode: "insensitive" } } : {}),
+      ...(status ? { status } : {}),
+      ...(agentName === "__NULL__" ? { agentName: null } : agentName ? { agentName } : {}),
+      ...(reference ? { reference: { contains: reference, mode: "insensitive" } } : {}),
+      ...(updatedFrom || updatedTo
+        ? {
+            lastUpdated: {
+              ...(updatedFrom ? { gte: updatedFrom } : {}),
+              ...(updatedTo ? { lte: updatedTo } : {})
+            }
+          }
+        : {})
+    };
 
-    const [allData, total] = await Promise.all([
+    const [allData, total, statusCounts, agentCounts] = await Promise.all([
       prisma.systemCan.findMany({
         where,
         orderBy: { canCode: "asc" }
       }),
-      prisma.systemCan.count({ where })
+      prisma.systemCan.count({ where }),
+      prisma.systemCan.groupBy({ by: ["status"], where, _count: { _all: true }, orderBy: { status: "asc" } }),
+      prisma.systemCan.groupBy({ by: ["agentName"], where, _count: { _all: true }, orderBy: { agentName: "asc" } })
     ]);
 
     const sorted = allData.sort((a, b) => canOrderCode(a.canCode) - canOrderCode(b.canCode));
@@ -57,7 +89,11 @@ router.get(
       page,
       pageSize,
       total,
-      pageCount: Math.max(Math.ceil(total / pageSize), 1)
+      pageCount: Math.max(Math.ceil(total / pageSize), 1),
+      facets: {
+        statuses: statusCounts.map((item) => ({ value: item.status, count: item._count._all })),
+        agents: agentCounts.map((item) => ({ value: item.agentName ?? "__NULL__", count: item._count._all }))
+      }
     });
   })
 );

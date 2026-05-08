@@ -8,6 +8,36 @@ export type PaginatedResponse<T> = {
   pageCount: number;
 };
 
+export type FacetOption = {
+  value: string;
+  count: number;
+};
+
+export type EmployeeFilters = {
+  employee?: string;
+  role?: string;
+  status?: string;
+  userId?: string;
+  defaultLogin?: string;
+};
+
+export type CenterFilters = {
+  centerId?: string;
+  location?: string;
+  agent?: string;
+  contact?: string;
+  status?: string;
+};
+
+export type SystemCanFilters = {
+  canCode?: string;
+  status?: string;
+  agentName?: string;
+  reference?: string;
+  updatedFrom?: string;
+  updatedTo?: string;
+};
+
 export type AdminUser = {
   id: number;
   userId: string;
@@ -139,6 +169,10 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
   return body as T;
 }
 
+function cleanParams(params: Record<string, string | undefined> = {}) {
+  return Object.fromEntries(Object.entries(params).filter(([, value]) => value !== undefined && value !== ""));
+}
+
 export const authApi = {
   me: () => api<{ user: AdminUser }>("/api/auth/me"),
   login: (payload: { userId: string; password: string }) =>
@@ -151,13 +185,16 @@ export const dashboardApi = {
 };
 
 export const employeesApi = {
-  list: (params: { page: number; pageSize: number; search?: string }) => {
+  list: (params: { page: number; pageSize: number; search?: string; filters?: EmployeeFilters }) => {
     const query = new URLSearchParams({
       page: String(params.page),
       pageSize: String(params.pageSize),
-      ...(params.search ? { search: params.search } : {})
+      ...(params.search ? { search: params.search } : {}),
+      ...cleanParams(params.filters)
     });
-    return api<PaginatedResponse<Employee>>(`/api/employees?${query}`);
+    return api<PaginatedResponse<Employee> & { facets: { roles: FacetOption[]; statuses: FacetOption[]; defaultLogin: FacetOption[] } }>(
+      `/api/employees?${query}`
+    );
   },
   create: (payload: {
     userId: string;
@@ -175,13 +212,16 @@ export const employeesApi = {
 };
 
 export const centersApi = {
-  list: (params: { page: number; pageSize: number; search?: string }) => {
+  list: (params: { page: number; pageSize: number; search?: string; filters?: CenterFilters }) => {
     const query = new URLSearchParams({
       page: String(params.page),
       pageSize: String(params.pageSize),
-      ...(params.search ? { search: params.search } : {})
+      ...(params.search ? { search: params.search } : {}),
+      ...cleanParams(params.filters)
     });
-    return api<PaginatedResponse<Center>>(`/api/centers?${query}`);
+    return api<PaginatedResponse<Center> & { facets: { agents: FacetOption[]; statuses: FacetOption[] } }>(
+      `/api/centers?${query}`
+    );
   },
   create: (payload: {
     centerId: string;
@@ -196,13 +236,16 @@ export const centersApi = {
 };
 
 export const systemCansApi = {
-  list: (params: { page: number; pageSize: number; search?: string }) => {
+  list: (params: { page: number; pageSize: number; search?: string; filters?: SystemCanFilters }) => {
     const query = new URLSearchParams({
       page: String(params.page),
       pageSize: String(params.pageSize),
-      ...(params.search ? { search: params.search } : {})
+      ...(params.search ? { search: params.search } : {}),
+      ...cleanParams(params.filters)
     });
-    return api<PaginatedResponse<SystemCan>>(`/api/system-cans?${query}`);
+    return api<PaginatedResponse<SystemCan> & { facets: { statuses: FacetOption[]; agents: FacetOption[] } }>(
+      `/api/system-cans?${query}`
+    );
   },
   create: (payload: {
     canCode: string;

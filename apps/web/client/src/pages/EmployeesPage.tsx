@@ -1,10 +1,11 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useCallback, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Edit3, KeyRound, Plus, Save, Trash2, X } from "lucide-react";
-import { employeesApi, type Employee } from "../api/client";
+import { employeesApi, type Employee, type EmployeeFilters, type FacetOption } from "../api/client";
 import { queryKeys } from "../api/queryKeys";
 import { Badge } from "../components/Badge";
 import { Button } from "../components/Button";
+import { OptionColumnFilter, TextColumnFilter } from "../components/ColumnFilters";
 import { DataTable, type Column } from "../components/Table";
 import { Modal } from "../components/Modal";
 import { PagePanel } from "../components/PagePanel";
@@ -19,6 +20,12 @@ const roles = [
   "Packaging",
   "Processing"
 ];
+
+const employeeStatuses = ["Active", "Inactive"];
+
+function countFor(options: FacetOption[] | undefined, value: string) {
+  return options?.find((option) => option.value === value)?.count ?? 0;
+}
 
 type EmployeeDialogState =
   | { mode: "create"; employee?: never }
@@ -229,25 +236,95 @@ export function EmployeesPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
   const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState<EmployeeFilters>({});
   const [dialog, setDialog] = useState<EmployeeDialogState | null>(null);
   const [passwordEmployee, setPasswordEmployee] = useState<Employee | null>(null);
   const queryClient = useQueryClient();
+  const filterKey = JSON.stringify(filters);
   const { data, isLoading } = useQuery({
-    queryKey: queryKeys.employees(page, pageSize, search),
-    queryFn: () => employeesApi.list({ page, pageSize, search })
+    queryKey: queryKeys.employees(page, pageSize, search, filterKey),
+    queryFn: () => employeesApi.list({ page, pageSize, search, filters })
   });
   const remove = useMutation({
     mutationFn: employeesApi.remove,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["employees"] })
   });
 
+  const updateFilter = useCallback((key: keyof EmployeeFilters, value: string) => {
+    setFilters((current) => ({ ...current, [key]: value }));
+    setPage(1);
+  }, []);
+
   const columns = useMemo<Column<Employee>[]>(
     () => [
-      { header: "Employee", filter: "search", accessor: (row) => row.fullName },
-      { header: "Role", filter: "sort", accessor: (row) => <span className="text-slate-700">{row.role}</span> },
-      { header: "Status", filter: "sort", accessor: (row) => row.status },
-      { header: "User ID", filter: "search", accessor: (row) => <code>{row.userId}</code> },
-      { header: "Default Login", filter: "sort", accessor: (row) => (row.defaultLogin ? "Default" : "-") },
+      {
+        header: "Employee",
+        filterControl: (
+          <TextColumnFilter
+            value={filters.employee ?? ""}
+            placeholder="Search employees"
+            onChange={(value) => updateFilter("employee", value)}
+          />
+        ),
+        accessor: (row) => row.fullName
+      },
+      {
+        header: "Role",
+        filterControl: (
+          <OptionColumnFilter
+            value={filters.role ?? ""}
+            allLabel={`All roles (${data?.total ?? 0})`}
+            searchPlaceholder="Search roles"
+            options={roles.map((role) => ({ label: role, value: role, count: countFor(data?.facets.roles, role) }))}
+            onChange={(value) => updateFilter("role", value)}
+          />
+        ),
+        accessor: (row) => <span className="text-slate-700">{row.role}</span>
+      },
+      {
+        header: "Status",
+        filterControl: (
+          <OptionColumnFilter
+            value={filters.status ?? ""}
+            allLabel={`All (${data?.total ?? 0})`}
+            searchPlaceholder="Search status"
+            options={employeeStatuses.map((status) => ({
+              label: status,
+              value: status,
+              count: countFor(data?.facets.statuses, status)
+            }))}
+            onChange={(value) => updateFilter("status", value)}
+          />
+        ),
+        accessor: (row) => row.status
+      },
+      {
+        header: "User ID",
+        filterControl: (
+          <TextColumnFilter
+            value={filters.userId ?? ""}
+            placeholder="Search user IDs"
+            onChange={(value) => updateFilter("userId", value)}
+          />
+        ),
+        accessor: (row) => <code>{row.userId}</code>
+      },
+      {
+        header: "Default Login",
+        filterControl: (
+          <OptionColumnFilter
+            value={filters.defaultLogin ?? ""}
+            allLabel={`All (${data?.total ?? 0})`}
+            searchPlaceholder="Search default login"
+            options={[
+              { label: "Default", value: "true", count: countFor(data?.facets.defaultLogin, "true") },
+              { label: "Not default", value: "false", count: countFor(data?.facets.defaultLogin, "false") }
+            ]}
+            onChange={(value) => updateFilter("defaultLogin", value)}
+          />
+        ),
+        accessor: (row) => (row.defaultLogin ? "Default" : "-")
+      },
       {
         header: "Actions",
         align: "right",
@@ -280,7 +357,7 @@ export function EmployeesPage() {
         )
       }
     ],
-    [remove]
+    [data?.facets.defaultLogin, data?.facets.roles, data?.facets.statuses, data?.total, filters, remove, updateFilter]
   );
 
   return (

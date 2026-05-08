@@ -1,15 +1,22 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useCallback, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Edit3, Plus, Trash2, X } from "lucide-react";
-import { centersApi, type Center } from "../api/client";
+import { centersApi, type Center, type CenterFilters, type FacetOption } from "../api/client";
 import { queryKeys } from "../api/queryKeys";
 import { Button } from "../components/Button";
+import { OptionColumnFilter, TextColumnFilter } from "../components/ColumnFilters";
 import { DataTable, type Column } from "../components/Table";
 import { Modal } from "../components/Modal";
 import { PagePanel } from "../components/PagePanel";
 import { Pagination } from "../components/Pagination";
 
 type CenterDialogState = { mode: "create"; center?: never } | { mode: "edit"; center: Center };
+
+const centerStatuses = ["Active", "Inactive"];
+
+function countFor(options: FacetOption[] | undefined, value: string) {
+  return options?.find((option) => option.value === value)?.count ?? 0;
+}
 
 function CenterDialog({ state, onClose }: { state: CenterDialogState; onClose: () => void }) {
   const queryClient = useQueryClient();
@@ -139,24 +146,93 @@ export function CentersPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
   const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState<CenterFilters>({});
   const [dialog, setDialog] = useState<CenterDialogState | null>(null);
   const queryClient = useQueryClient();
+  const filterKey = JSON.stringify(filters);
   const { data, isLoading } = useQuery({
-    queryKey: queryKeys.centers(page, pageSize, search),
-    queryFn: () => centersApi.list({ page, pageSize, search })
+    queryKey: queryKeys.centers(page, pageSize, search, filterKey),
+    queryFn: () => centersApi.list({ page, pageSize, search, filters })
   });
   const remove = useMutation({
     mutationFn: centersApi.remove,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["centers"] })
   });
 
+  const updateFilter = useCallback((key: keyof CenterFilters, value: string) => {
+    setFilters((current) => ({ ...current, [key]: value }));
+    setPage(1);
+  }, []);
+
   const columns = useMemo<Column<Center>[]>(
     () => [
-      { header: "Center ID", filter: "search", accessor: (row) => row.centerId },
-      { header: "Location", filter: "search", accessor: (row) => row.location },
-      { header: "Agent", filter: "sort", accessor: (row) => row.agent },
-      { header: "Contact", filter: "search", accessor: (row) => row.contactPhone || "--" },
-      { header: "Status", filter: "sort", accessor: (row) => row.status },
+      {
+        header: "Center ID",
+        filterControl: (
+          <TextColumnFilter
+            value={filters.centerId ?? ""}
+            placeholder="Search center IDs"
+            onChange={(value) => updateFilter("centerId", value)}
+          />
+        ),
+        accessor: (row) => row.centerId
+      },
+      {
+        header: "Location",
+        filterControl: (
+          <TextColumnFilter
+            value={filters.location ?? ""}
+            placeholder="Search locations"
+            onChange={(value) => updateFilter("location", value)}
+          />
+        ),
+        accessor: (row) => row.location
+      },
+      {
+        header: "Agent",
+        filterControl: (
+          <OptionColumnFilter
+            value={filters.agent ?? ""}
+            allLabel={`All agents (${data?.total ?? 0})`}
+            searchPlaceholder="Search agents"
+            options={(data?.facets.agents ?? []).map((agent) => ({
+              label: agent.value,
+              value: agent.value,
+              count: agent.count
+            }))}
+            onChange={(value) => updateFilter("agent", value)}
+          />
+        ),
+        accessor: (row) => row.agent
+      },
+      {
+        header: "Contact",
+        filterControl: (
+          <TextColumnFilter
+            value={filters.contact ?? ""}
+            placeholder="Search contacts"
+            onChange={(value) => updateFilter("contact", value)}
+          />
+        ),
+        accessor: (row) => row.contactPhone || "--"
+      },
+      {
+        header: "Status",
+        filterControl: (
+          <OptionColumnFilter
+            value={filters.status ?? ""}
+            allLabel={`All (${data?.total ?? 0})`}
+            searchPlaceholder="Search status"
+            options={centerStatuses.map((status) => ({
+              label: status,
+              value: status,
+              count: countFor(data?.facets.statuses, status)
+            }))}
+            onChange={(value) => updateFilter("status", value)}
+          />
+        ),
+        accessor: (row) => row.status
+      },
       {
         header: "Actions",
         align: "right",
@@ -186,7 +262,7 @@ export function CentersPage() {
         )
       }
     ],
-    [remove]
+    [data?.facets.agents, data?.facets.statuses, data?.total, filters, remove, updateFilter]
   );
 
   return (

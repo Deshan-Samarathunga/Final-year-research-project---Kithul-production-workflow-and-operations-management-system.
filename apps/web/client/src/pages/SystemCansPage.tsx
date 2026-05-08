@@ -1,10 +1,11 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useCallback, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Clock3, Plus, Trash2, X } from "lucide-react";
-import { systemCansApi, type SystemCan } from "../api/client";
+import { systemCansApi, type FacetOption, type SystemCan, type SystemCanFilters } from "../api/client";
 import { queryKeys } from "../api/queryKeys";
 import { Badge, type BadgeTone } from "../components/Badge";
 import { Button } from "../components/Button";
+import { DateRangeColumnFilter, OptionColumnFilter, TextColumnFilter, type DateRangeValue } from "../components/ColumnFilters";
 import { DataTable, type Column } from "../components/Table";
 import { Modal } from "../components/Modal";
 import { PagePanel } from "../components/PagePanel";
@@ -12,6 +13,11 @@ import { Pagination } from "../components/Pagination";
 import { formatDateTime } from "../utils/format";
 
 const canStatuses = ["In warehouse", "Dispatched", "Lost", "Retired"];
+const canFilterStatuses = ["In warehouse", "Dispatched", "Collected", "Lost", "Retired"];
+
+function countFor(options: FacetOption[] | undefined, value: string) {
+  return options?.find((option) => option.value === value)?.count ?? 0;
+}
 
 function statusTone(status: string): BadgeTone {
   if (status === "Dispatched") return "teal";
@@ -160,17 +166,29 @@ export function SystemCansPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
   const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState<SystemCanFilters>({});
   const [addOpen, setAddOpen] = useState(false);
   const [historyCan, setHistoryCan] = useState<SystemCan | null>(null);
   const queryClient = useQueryClient();
+  const filterKey = JSON.stringify(filters);
   const { data, isLoading } = useQuery({
-    queryKey: queryKeys.systemCans(page, pageSize, search),
-    queryFn: () => systemCansApi.list({ page, pageSize, search })
+    queryKey: queryKeys.systemCans(page, pageSize, search, filterKey),
+    queryFn: () => systemCansApi.list({ page, pageSize, search, filters })
   });
   const remove = useMutation({
     mutationFn: systemCansApi.remove,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["system-cans"] })
   });
+
+  const updateFilter = useCallback((key: keyof SystemCanFilters, value: string) => {
+    setFilters((current) => ({ ...current, [key]: value }));
+    setPage(1);
+  }, []);
+
+  const updateDateRange = useCallback((value: DateRangeValue) => {
+    setFilters((current) => ({ ...current, updatedFrom: value.from, updatedTo: value.to }));
+    setPage(1);
+  }, []);
 
   const columns = useMemo<Column<SystemCan>[]>(
     () => [
@@ -180,15 +198,72 @@ export function SystemCansPage() {
         className: "w-12",
         accessor: () => <input type="checkbox" className="h-4 w-4 rounded border-slate-300" aria-label="Select can" />
       },
-      { header: "Can", filter: "search", accessor: (row) => <span className="font-bold">{row.canCode}</span> },
+      {
+        header: "Can",
+        filterControl: (
+          <TextColumnFilter
+            value={filters.canCode ?? ""}
+            placeholder="Search cans"
+            onChange={(value) => updateFilter("canCode", value)}
+          />
+        ),
+        accessor: (row) => <span className="font-bold">{row.canCode}</span>
+      },
       {
         header: "Status",
-        filter: "sort",
+        filterControl: (
+          <OptionColumnFilter
+            value={filters.status ?? ""}
+            allLabel={`All (${data?.total ?? 0})`}
+            searchPlaceholder="Search status"
+            options={canFilterStatuses.map((status) => ({
+              label: status,
+              value: status,
+              count: countFor(data?.facets.statuses, status)
+            }))}
+            onChange={(value) => updateFilter("status", value)}
+          />
+        ),
         accessor: (row) => <Badge tone={statusTone(row.status)}>{row.status}</Badge>
       },
-      { header: "Agent Name", filter: "sort", accessor: (row) => row.agentName || "-" },
-      { header: "Reference", filter: "search", accessor: (row) => row.reference || "-" },
-      { header: "Last Updated", filter: "date", accessor: (row) => formatDateTime(row.lastUpdated) },
+      {
+        header: "Agent Name",
+        filterControl: (
+          <OptionColumnFilter
+            value={filters.agentName ?? ""}
+            allLabel={`All agents (${data?.total ?? 0})`}
+            searchPlaceholder="Search agents"
+            options={(data?.facets.agents ?? []).map((agent) => ({
+              label: agent.value === "__NULL__" ? "N/A" : agent.value,
+              value: agent.value,
+              count: agent.count
+            }))}
+            onChange={(value) => updateFilter("agentName", value)}
+          />
+        ),
+        accessor: (row) => row.agentName || "-"
+      },
+      {
+        header: "Reference",
+        filterControl: (
+          <TextColumnFilter
+            value={filters.reference ?? ""}
+            placeholder="Search references"
+            onChange={(value) => updateFilter("reference", value)}
+          />
+        ),
+        accessor: (row) => row.reference || "-"
+      },
+      {
+        header: "Last Updated",
+        filterControl: (
+          <DateRangeColumnFilter
+            value={{ from: filters.updatedFrom ?? "", to: filters.updatedTo ?? "" }}
+            onChange={updateDateRange}
+          />
+        ),
+        accessor: (row) => formatDateTime(row.lastUpdated)
+      },
       {
         header: "Actions",
         align: "right",
@@ -212,7 +287,7 @@ export function SystemCansPage() {
         )
       }
     ],
-    [remove]
+    [data?.facets.agents, data?.facets.statuses, data?.total, filters, remove, updateDateRange, updateFilter]
   );
 
   return (

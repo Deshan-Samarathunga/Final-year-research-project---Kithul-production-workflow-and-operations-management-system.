@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../db.js";
 import { asyncHandler, AppError, pagination } from "../utils/http.js";
@@ -70,18 +71,30 @@ router.get(
   asyncHandler(async (request, response) => {
     const { page, pageSize, skip, take } = pagination(request.query);
     const search = String(request.query.search ?? "").trim();
-    const where = search
-      ? {
-          OR: [
-            { userId: { contains: search, mode: "insensitive" as const } },
-            { fullName: { contains: search, mode: "insensitive" as const } },
-            { role: { contains: search, mode: "insensitive" as const } },
-            { status: { contains: search, mode: "insensitive" as const } }
-          ]
-        }
-      : {};
+    const employee = String(request.query.employee ?? "").trim();
+    const role = String(request.query.role ?? "").trim();
+    const status = String(request.query.status ?? "").trim();
+    const userId = String(request.query.userId ?? "").trim();
+    const defaultLogin = String(request.query.defaultLogin ?? "").trim();
+    const where: Prisma.EmployeeWhereInput = {
+      ...(search
+        ? {
+            OR: [
+              { userId: { contains: search, mode: "insensitive" } },
+              { fullName: { contains: search, mode: "insensitive" } },
+              { role: { contains: search, mode: "insensitive" } },
+              { status: { contains: search, mode: "insensitive" } }
+            ]
+          }
+        : {}),
+      ...(employee ? { fullName: { contains: employee, mode: "insensitive" } } : {}),
+      ...(role ? { role } : {}),
+      ...(status ? { status } : {}),
+      ...(userId ? { userId: { contains: userId, mode: "insensitive" } } : {}),
+      ...(defaultLogin ? { defaultLogin: defaultLogin === "true" } : {})
+    };
 
-    const [data, total] = await Promise.all([
+    const [data, total, roleCounts, statusCounts, defaultLoginCounts] = await Promise.all([
       prisma.employee.findMany({
         where,
         select: employeeSelect,
@@ -89,7 +102,10 @@ router.get(
         skip,
         take
       }),
-      prisma.employee.count({ where })
+      prisma.employee.count({ where }),
+      prisma.employee.groupBy({ by: ["role"], where, _count: { _all: true }, orderBy: { role: "asc" } }),
+      prisma.employee.groupBy({ by: ["status"], where, _count: { _all: true }, orderBy: { status: "asc" } }),
+      prisma.employee.groupBy({ by: ["defaultLogin"], where, _count: { _all: true } })
     ]);
 
     response.json({
@@ -97,7 +113,15 @@ router.get(
       page,
       pageSize,
       total,
-      pageCount: Math.max(Math.ceil(total / pageSize), 1)
+      pageCount: Math.max(Math.ceil(total / pageSize), 1),
+      facets: {
+        roles: roleCounts.map((item) => ({ value: item.role, count: item._count._all })),
+        statuses: statusCounts.map((item) => ({ value: item.status, count: item._count._all })),
+        defaultLogin: defaultLoginCounts.map((item) => ({
+          value: String(item.defaultLogin),
+          count: item._count._all
+        }))
+      }
     });
   })
 );

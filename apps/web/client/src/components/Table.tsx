@@ -8,6 +8,7 @@ export type Column<T> = {
   className?: string;
   align?: "left" | "right" | "center";
   filter?: "search" | "sort" | "date" | "none";
+  filterControl?: ReactNode;
 };
 
 export function DataTable<T>({
@@ -38,7 +39,9 @@ export function DataTable<T>({
               >
                 <span className="inline-flex items-center gap-2">
                   {column.header}
-                  {column.filter && column.filter !== "none" ? (
+                  {column.filterControl ? (
+                    column.filterControl
+                  ) : column.filter && column.filter !== "none" ? (
                     <span className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-slate-300 bg-white text-slate-600">
                       {column.filter === "search" ? (
                         <Search className="h-3.5 w-3.5" />

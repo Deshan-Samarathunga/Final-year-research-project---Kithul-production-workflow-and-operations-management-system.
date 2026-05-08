@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../db.js";
 import { asyncHandler, AppError, pagination } from "../utils/http.js";
@@ -25,26 +26,40 @@ router.get(
   asyncHandler(async (request, response) => {
     const { page, pageSize, skip, take } = pagination(request.query);
     const search = String(request.query.search ?? "").trim();
-    const where = search
-      ? {
-          OR: [
-            { centerId: { contains: search, mode: "insensitive" as const } },
-            { location: { contains: search, mode: "insensitive" as const } },
-            { agent: { contains: search, mode: "insensitive" as const } },
-            { contactPhone: { contains: search, mode: "insensitive" as const } },
-            { status: { contains: search, mode: "insensitive" as const } }
-          ]
-        }
-      : {};
+    const centerId = String(request.query.centerId ?? "").trim();
+    const location = String(request.query.location ?? "").trim();
+    const agent = String(request.query.agent ?? "").trim();
+    const contact = String(request.query.contact ?? "").trim();
+    const status = String(request.query.status ?? "").trim();
+    const where: Prisma.CenterWhereInput = {
+      ...(search
+        ? {
+            OR: [
+              { centerId: { contains: search, mode: "insensitive" } },
+              { location: { contains: search, mode: "insensitive" } },
+              { agent: { contains: search, mode: "insensitive" } },
+              { contactPhone: { contains: search, mode: "insensitive" } },
+              { status: { contains: search, mode: "insensitive" } }
+            ]
+          }
+        : {}),
+      ...(centerId ? { centerId: { contains: centerId, mode: "insensitive" } } : {}),
+      ...(location ? { location: { contains: location, mode: "insensitive" } } : {}),
+      ...(agent ? { agent } : {}),
+      ...(contact ? { contactPhone: { contains: contact, mode: "insensitive" } } : {}),
+      ...(status ? { status } : {})
+    };
 
-    const [data, total] = await Promise.all([
+    const [data, total, agentCounts, statusCounts] = await Promise.all([
       prisma.center.findMany({
         where,
         orderBy: { id: "asc" },
         skip,
         take
       }),
-      prisma.center.count({ where })
+      prisma.center.count({ where }),
+      prisma.center.groupBy({ by: ["agent"], where, _count: { _all: true }, orderBy: { agent: "asc" } }),
+      prisma.center.groupBy({ by: ["status"], where, _count: { _all: true }, orderBy: { status: "asc" } })
     ]);
 
     response.json({
@@ -52,7 +67,11 @@ router.get(
       page,
       pageSize,
       total,
-      pageCount: Math.max(Math.ceil(total / pageSize), 1)
+      pageCount: Math.max(Math.ceil(total / pageSize), 1),
+      facets: {
+        agents: agentCounts.map((item) => ({ value: item.agent, count: item._count._all })),
+        statuses: statusCounts.map((item) => ({ value: item.status, count: item._count._all }))
+      }
     });
   })
 );
