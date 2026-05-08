@@ -12,7 +12,13 @@
     "test:watch": "vitest",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "prisma db seed"
+    "prisma:seed": "prisma db seed",
+    "seed:admin": "tsx scripts/local/seed-admin.ts",
+    "seed:employees": "tsx scripts/local/seed-employees.ts",
+    "seed:centers": "tsx scripts/local/seed-centers.ts",
+    "seed:cans": "tsx scripts/local/seed-cans.ts",
+    "seed:issue-notes": "tsx scripts/local/seed-issue-notes.ts",
+    "seed:local": "tsx scripts/local/seed-all.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.7.0",

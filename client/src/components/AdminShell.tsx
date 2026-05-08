@@ -1,17 +1,12 @@
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
-  BarChart3,
-  BriefcaseBusiness,
   Building2,
   ClipboardCheck,
   ClipboardList,
-  Layers,
   LayoutDashboard,
   LogOut,
   Menu,
-  RefreshCw,
   Settings,
-  ShoppingBag,
   Users,
   X
 } from "lucide-react";
@@ -26,8 +21,6 @@ type NavItem = {
   label: string;
   to: string;
   icon: LucideIcon;
-  expandable?: boolean;
-  children?: string[];
 };
 
 const navSections: Array<{ title: string; items: NavItem[] }> = [
@@ -40,40 +33,7 @@ const navSections: Array<{ title: string; items: NavItem[] }> = [
     items: [
       { label: "Employees", to: "/admin/employees", icon: Users },
       { label: "Centers", to: "/admin/centers", icon: Building2 },
-      { label: "System Cans", to: "/admin/system-cans", icon: ClipboardCheck },
-      { label: "Products", to: "#", icon: Layers, expandable: true }
-    ]
-  },
-  {
-    title: "Inventory",
-    items: [
-      {
-        label: "Production Inventory",
-        to: "#",
-        icon: RefreshCw,
-        expandable: true,
-        children: ["Raw Material", "Processing", "Packaging", "Reuse Return"]
-      },
-      { label: "Product Inventory", to: "#", icon: ShoppingBag },
-      {
-        label: "Material Inventory",
-        to: "#",
-        icon: BriefcaseBusiness,
-        expandable: true,
-        children: ["Materials", "FIFO layers"]
-      }
-    ]
-  },
-  {
-    title: "Analytics",
-    items: [
-      {
-        label: "Sales Reports",
-        to: "#",
-        icon: BarChart3,
-        expandable: true,
-        children: ["Orders"]
-      }
+      { label: "System Cans", to: "/admin/system-cans", icon: ClipboardCheck }
     ]
   }
 ];
@@ -115,30 +75,6 @@ function Sidebar({ open, currentPath, onClose }: { open: boolean; currentPath: s
               {section.items.map((item) => {
                 const Icon = item.icon;
                 const isFieldActive = item.label === "Dashboard" && currentPath === "/admin/field-collection";
-
-                if (item.to === "#") {
-                  return (
-                    <div key={item.label}>
-                      <button className="flex h-10 w-full items-center gap-3 rounded-md px-3 text-left text-sm text-slate-600 hover:bg-slate-50">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-md bg-slate-100 text-slate-600">
-                          <Icon className="h-5 w-5" />
-                        </span>
-                        <span className="flex-1">{item.label}</span>
-                        {item.expandable ? <span className="text-xs">⌃</span> : null}
-                      </button>
-                      {item.children ? (
-                        <div className="ml-10 border-l-2 border-slate-200 py-2">
-                          {item.children.map((child) => (
-                            <div key={child} className="relative py-2 pl-7 text-sm text-slate-700">
-                              <span className="absolute -left-[5px] top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-slate-300" />
-                              {child}
-                            </div>
-                          ))}
-                        </div>
-                      ) : null}
-                    </div>
-                  );
-                }
 
                 return (
                   <NavLink

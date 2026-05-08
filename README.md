@@ -60,6 +60,26 @@ npm.cmd run build        # type-check and build server/client
 npm.cmd run test         # run backend and frontend tests
 npm.cmd run db:migrate   # apply Prisma migrations
 npm.cmd run db:seed      # seed screenshot-style data
+npm.cmd run seed:local   # seed local data through modular scripts
 ```
 
 The scoped admin pages are Dashboard, Employees, Centers, System Cans, and Field Collection. Other sidebar modules are visual placeholders for the next phase.
+
+## Database Reference Files
+
+The root `db/` folder contains SQL reference files for the full schema, module-level schema slices, migration snapshots, and verification queries. Prisma remains the normal migration runner under `server/prisma`.
+
+## Local Seed Scripts
+
+The `server/scripts/local/` folder contains smaller seed scripts for loading only the data group you need:
+
+```powershell
+npm.cmd run seed:admin
+npm.cmd run seed:employees
+npm.cmd run seed:centers
+npm.cmd run seed:cans
+npm.cmd run seed:issue-notes
+npm.cmd run seed:local
+```
+
+If seed scripts fail with `permission denied for table ...`, run `db/permissions/grant_kithulflow_app_user.sql` in pgAdmin while connected to the `kithulflow` database as `postgres`, then run the seed command again.

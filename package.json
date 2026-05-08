@@ -15,7 +15,13 @@
     "test": "npm run test --workspace server && npm run test --workspace client",
     "db:generate": "npm run prisma:generate --workspace server",
     "db:migrate": "npm run prisma:migrate --workspace server",
-    "db:seed": "npm run prisma:seed --workspace server"
+    "db:seed": "npm run prisma:seed --workspace server",
+    "seed:admin": "npm run seed:admin --workspace server",
+    "seed:employees": "npm run seed:employees --workspace server",
+    "seed:centers": "npm run seed:centers --workspace server",
+    "seed:cans": "npm run seed:cans --workspace server",
+    "seed:issue-notes": "npm run seed:issue-notes --workspace server",
+    "seed:local": "npm run seed:local --workspace server"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
