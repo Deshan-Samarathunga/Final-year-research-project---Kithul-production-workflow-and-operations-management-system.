@@ -17,7 +17,8 @@ class KithulFlowMobileApp extends ConsumerStatefulWidget {
   final String initialLocation;
 
   @override
-  ConsumerState<KithulFlowMobileApp> createState() => _KithulFlowMobileAppState();
+  ConsumerState<KithulFlowMobileApp> createState() =>
+      _KithulFlowMobileAppState();
 }
 
 class _KithulFlowMobileAppState extends ConsumerState<KithulFlowMobileApp> {
@@ -28,14 +29,19 @@ class _KithulFlowMobileAppState extends ConsumerState<KithulFlowMobileApp> {
     final session = ref.watch(sessionProvider);
 
     ref.listen(connectivityProvider, (_, next) {
-      final connected = next.asData?.value.any((result) => result.name != 'none') ?? false;
-      if (widget.initialLocation == '/login' && connected && ref.read(sessionProvider).asData?.value != null) {
+      final connected =
+          next.asData?.value.any((result) => result.name != 'none') ?? false;
+      if (widget.initialLocation == '/login' &&
+          connected &&
+          ref.read(sessionProvider).asData?.value != null) {
         Future.microtask(() => ref.read(mobileSyncServiceProvider).syncNow());
       }
     });
 
     final activeSession = session.asData?.value;
-    if (widget.initialLocation == '/login' && activeSession != null && _lastAutoSyncedToken != activeSession.token) {
+    if (widget.initialLocation == '/login' &&
+        activeSession != null &&
+        _lastAutoSyncedToken != activeSession.token) {
       _lastAutoSyncedToken = activeSession.token;
       Future.microtask(() => ref.read(mobileSyncServiceProvider).syncNow());
     }

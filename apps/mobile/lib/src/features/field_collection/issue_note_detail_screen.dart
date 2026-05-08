@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../core/theme.dart';
 import '../../data/app_database.dart';
@@ -16,13 +17,16 @@ class IssueNoteDetailScreen extends ConsumerStatefulWidget {
   final String noteLocalId;
 
   @override
-  ConsumerState<IssueNoteDetailScreen> createState() => _IssueNoteDetailScreenState();
+  ConsumerState<IssueNoteDetailScreen> createState() =>
+      _IssueNoteDetailScreenState();
 }
 
 class _IssueNoteDetailScreenState extends ConsumerState<IssueNoteDetailScreen> {
   final _formKey = GlobalKey<FormState>();
   final _canController = TextEditingController();
   final _quantityController = TextEditingController();
+  final _phController = TextEditingController();
+  final _brixController = TextEditingController();
   late Future<IssueNoteView?> _noteFuture;
 
   @override
@@ -35,11 +39,15 @@ class _IssueNoteDetailScreenState extends ConsumerState<IssueNoteDetailScreen> {
   void dispose() {
     _canController.dispose();
     _quantityController.dispose();
+    _phController.dispose();
+    _brixController.dispose();
     super.dispose();
   }
 
   void _reload() {
-    _noteFuture = ref.read(fieldRepositoryProvider).getIssueNote(widget.noteLocalId);
+    _noteFuture = ref
+        .read(fieldRepositoryProvider)
+        .getIssueNote(widget.noteLocalId);
   }
 
   @override
@@ -47,7 +55,11 @@ class _IssueNoteDetailScreenState extends ConsumerState<IssueNoteDetailScreen> {
     final items = ref.watch(issueNoteItemsProvider(widget.noteLocalId));
 
     return Scaffold(
-      appBar: const KithulAppBar(title: 'Issue Note', subtitle: 'Can quantities', showBack: true),
+      appBar: const KithulAppBar(
+        title: 'Issue Note',
+        subtitle: 'Can quantities',
+        showBack: true,
+      ),
       body: FutureBuilder<IssueNoteView?>(
         future: _noteFuture,
         builder: (context, snapshot) {
@@ -71,18 +83,23 @@ class _IssueNoteDetailScreenState extends ConsumerState<IssueNoteDetailScreen> {
             children: [
               _IssueHeader(view: view),
               const SizedBox(height: 12),
-              _Toolbar(
-                onTransportCost: () => _snack(context, 'Transport cost capture is ready for the next sync phase.'),
-                onInfo: () => _snack(context, 'Offline note: ${note.issueNoteName} is saved on this device.'),
-                onExport: () => _snack(context, 'Export will use the local note data when enabled.'),
-              ),
-              const SizedBox(height: 12),
-              if (canEdit) _AddCanForm(formKey: _formKey, canController: _canController, quantityController: _quantityController, onAdd: _addCan),
+              if (canEdit)
+                _AddCanForm(
+                  formKey: _formKey,
+                  canController: _canController,
+                  quantityController: _quantityController,
+                  phController: _phController,
+                  brixController: _brixController,
+                  onScan: _scanCanCode,
+                  onAdd: _addCan,
+                ),
               if (!canEdit)
                 const Card(
                   child: Padding(
                     padding: EdgeInsets.all(14),
-                    child: Text('This completed note is read-only. Reopen it to add or remove cans.'),
+                    child: Text(
+                      'This completed note is read-only. Reopen it to add or remove cans.',
+                    ),
                   ),
                 ),
               const SizedBox(height: 12),
@@ -93,7 +110,9 @@ class _IssueNoteDetailScreenState extends ConsumerState<IssueNoteDetailScreen> {
                   items: rows,
                   canEdit: canEdit,
                   onDelete: (itemLocalId) async {
-                    await ref.read(fieldRepositoryProvider).deleteIssueCan(itemLocalId, widget.noteLocalId);
+                    await ref
+                        .read(fieldRepositoryProvider)
+                        .deleteIssueCan(itemLocalId, widget.noteLocalId);
                     unawaited(ref.read(mobileSyncServiceProvider).syncNow());
                     setState(_reload);
                   },
@@ -103,7 +122,9 @@ class _IssueNoteDetailScreenState extends ConsumerState<IssueNoteDetailScreen> {
               if (note.status == NoteStatus.active)
                 FilledButton.icon(
                   onPressed: () async {
-                    await ref.read(fieldRepositoryProvider).submitIssueNote(widget.noteLocalId);
+                    await ref
+                        .read(fieldRepositoryProvider)
+                        .submitIssueNote(widget.noteLocalId);
                     unawaited(ref.read(mobileSyncServiceProvider).syncNow());
                     setState(_reload);
                   },
@@ -113,7 +134,9 @@ class _IssueNoteDetailScreenState extends ConsumerState<IssueNoteDetailScreen> {
               else
                 FilledButton.icon(
                   onPressed: () async {
-                    await ref.read(fieldRepositoryProvider).reopenIssueNote(widget.noteLocalId);
+                    await ref
+                        .read(fieldRepositoryProvider)
+                        .reopenIssueNote(widget.noteLocalId);
                     unawaited(ref.read(mobileSyncServiceProvider).syncNow());
                     setState(_reload);
                   },
@@ -129,19 +152,79 @@ class _IssueNoteDetailScreenState extends ConsumerState<IssueNoteDetailScreen> {
 
   Future<void> _addCan() async {
     if (!_formKey.currentState!.validate()) return;
-    await ref.read(fieldRepositoryProvider).addIssueCan(
+    final canCode = _canController.text.trim().toUpperCase();
+    final can = await ref.read(fieldRepositoryProvider).findSystemCan(canCode);
+    if (can == null) {
+      final confirmed = await _confirmUnknownCan(canCode);
+      if (!confirmed) return;
+    }
+
+    await ref
+        .read(fieldRepositoryProvider)
+        .addIssueCan(
           issueNoteLocalId: widget.noteLocalId,
-          canCode: _canController.text,
+          canCode: canCode,
           quantity: double.parse(_quantityController.text),
+          phValue: double.parse(_phController.text),
+          brixValue: double.parse(_brixController.text),
         );
     _canController.clear();
     _quantityController.clear();
+    _phController.clear();
+    _brixController.clear();
     unawaited(ref.read(mobileSyncServiceProvider).syncNow());
     setState(_reload);
   }
 
+  Future<void> _scanCanCode() async {
+    final scannedValue = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (context) => const _QrScanSheet(),
+    );
+    if (scannedValue == null || scannedValue.trim().isEmpty) return;
+
+    final canCode = scannedValue.trim().toUpperCase();
+    _canController.text = canCode;
+    final can = await ref.read(fieldRepositoryProvider).findSystemCan(canCode);
+    if (!mounted) return;
+    if (can == null) {
+      _snack(
+        context,
+        '$canCode is not in local cans. Sync first or confirm manually when adding.',
+      );
+    }
+  }
+
+  Future<bool> _confirmUnknownCan(String canCode) async {
+    if (!mounted) return false;
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Unknown can'),
+            content: Text(
+              '$canCode is not in local system cans. Sync first if this can should exist, or confirm to use it anyway.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Use anyway'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
   void _snack(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
@@ -162,7 +245,12 @@ class _IssueHeader extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(child: Text(note.issueNoteName, style: Theme.of(context).textTheme.titleLarge)),
+                Expanded(
+                  child: Text(
+                    note.issueNoteName,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                ),
                 StatusBadge(label: note.status),
               ],
             ),
@@ -172,14 +260,21 @@ class _IssueHeader extends StatelessWidget {
               style: const TextStyle(color: kithulMuted),
             ),
             const SizedBox(height: 4),
-            Text(view.center?.agent ?? 'No center agent', style: const TextStyle(fontWeight: FontWeight.w700)),
+            Text(
+              view.center?.agent ?? 'No center agent',
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
                 MetricChip(label: 'Can count', value: note.canCount.toString()),
-                MetricChip(label: 'Total qty', value: quantityFormat.format(note.totalQty), color: kithulGreen),
+                MetricChip(
+                  label: 'Total qty',
+                  value: quantityFormat.format(note.totalQty),
+                  color: kithulGreen,
+                ),
               ],
             ),
           ],
@@ -189,43 +284,23 @@ class _IssueHeader extends StatelessWidget {
   }
 }
 
-class _Toolbar extends StatelessWidget {
-  const _Toolbar({required this.onTransportCost, required this.onInfo, required this.onExport});
-
-  final VoidCallback onTransportCost;
-  final VoidCallback onInfo;
-  final VoidCallback onExport;
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        OutlinedButton.icon(onPressed: onTransportCost, icon: const Icon(Icons.receipt_long_outlined), label: const Text('Transport cost')),
-        OutlinedButton.icon(onPressed: onInfo, icon: const Icon(Icons.info_outline), label: const Text('Info')),
-        FilledButton.icon(
-          style: FilledButton.styleFrom(backgroundColor: kithulGreen),
-          onPressed: onExport,
-          icon: const Icon(Icons.download_outlined),
-          label: const Text('Export'),
-        ),
-      ],
-    );
-  }
-}
-
 class _AddCanForm extends StatelessWidget {
   const _AddCanForm({
     required this.formKey,
     required this.canController,
     required this.quantityController,
+    required this.phController,
+    required this.brixController,
+    required this.onScan,
     required this.onAdd,
   });
 
   final GlobalKey<FormState> formKey;
   final TextEditingController canController;
   final TextEditingController quantityController;
+  final TextEditingController phController;
+  final TextEditingController brixController;
+  final VoidCallback onScan;
   final VoidCallback onAdd;
 
   @override
@@ -240,17 +315,43 @@ class _AddCanForm extends StatelessWidget {
             children: [
               Text('Add can', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 12),
-              TextFormField(
-                controller: canController,
-                textCapitalization: TextCapitalization.characters,
-                decoration: const InputDecoration(labelText: 'Select / Type Can ID', prefixIcon: Icon(Icons.search)),
-                validator: (value) => value == null || value.trim().isEmpty ? 'Enter can ID' : null,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: canController,
+                      textCapitalization: TextCapitalization.characters,
+                      decoration: const InputDecoration(
+                        labelText: 'Select / Type Can ID',
+                        prefixIcon: Icon(Icons.search),
+                      ),
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
+                          ? 'Enter can ID'
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    height: 56,
+                    child: OutlinedButton.icon(
+                      onPressed: onScan,
+                      icon: const Icon(Icons.qr_code_scanner),
+                      label: const Text('Scan QR'),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: quantityController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                ],
                 decoration: const InputDecoration(labelText: 'Quantity'),
                 validator: (value) {
                   final qty = double.tryParse(value ?? '');
@@ -260,7 +361,53 @@ class _AddCanForm extends StatelessWidget {
                 },
               ),
               const SizedBox(height: 12),
-              FilledButton.icon(onPressed: onAdd, icon: const Icon(Icons.add), label: const Text('Add')),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: phController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                      ],
+                      decoration: const InputDecoration(labelText: 'pH value'),
+                      validator: (value) {
+                        final ph = double.tryParse(value ?? '');
+                        if (ph == null) return 'Enter pH value';
+                        if (ph < 0 || ph > 14) return 'pH must be 0-14';
+                        return null;
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextFormField(
+                      controller: brixController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                      ],
+                      decoration: const InputDecoration(labelText: 'Brix'),
+                      validator: (value) {
+                        final brix = double.tryParse(value ?? '');
+                        if (brix == null) return 'Enter Brix';
+                        if (brix < 0) return 'Brix must be 0 or more';
+                        return null;
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                onPressed: onAdd,
+                icon: const Icon(Icons.add),
+                label: const Text('Add'),
+              ),
             ],
           ),
         ),
@@ -270,7 +417,11 @@ class _AddCanForm extends StatelessWidget {
 }
 
 class _CanList extends StatelessWidget {
-  const _CanList({required this.items, required this.canEdit, required this.onDelete});
+  const _CanList({
+    required this.items,
+    required this.canEdit,
+    required this.onDelete,
+  });
 
   final List<IssueNoteItemRecord> items;
   final bool canEdit;
@@ -298,19 +449,103 @@ class _CanList extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 8),
             child: Card(
               child: ListTile(
-                title: Text(item.canCode, style: const TextStyle(fontWeight: FontWeight.w800)),
-                subtitle: Text('Quantity ${quantityFormat.format(item.quantity)}'),
+                title: Text(
+                  item.canCode,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                subtitle: Text(
+                  'Quantity ${quantityFormat.format(item.quantity)}  |  pH ${quantityFormat.format(item.phValue)}  |  Brix ${quantityFormat.format(item.brixValue)}',
+                ),
                 trailing: canEdit
                     ? IconButton(
                         tooltip: 'Delete can',
                         onPressed: () => onDelete(item.localId),
-                        icon: Icon(Icons.delete_outline, color: Colors.red.shade600),
+                        icon: Icon(
+                          Icons.delete_outline,
+                          color: Colors.red.shade600,
+                        ),
                       )
                     : null,
               ),
             ),
           ),
       ],
+    );
+  }
+}
+
+class _QrScanSheet extends StatefulWidget {
+  const _QrScanSheet();
+
+  @override
+  State<_QrScanSheet> createState() => _QrScanSheetState();
+}
+
+class _QrScanSheetState extends State<_QrScanSheet> {
+  final _controller = MobileScannerController(
+    formats: const [BarcodeFormat.qrCode],
+  );
+  bool _handled = false;
+
+  @override
+  void dispose() {
+    unawaited(_controller.dispose());
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: MediaQuery.sizeOf(context).height * 0.78,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Scan can QR',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Close scanner',
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              'Point the camera at a KithulFlow system can QR label.',
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
+              child: MobileScanner(
+                controller: _controller,
+                onDetect: (capture) {
+                  if (_handled) return;
+                  final barcode = capture.barcodes.isEmpty
+                      ? null
+                      : capture.barcodes.first;
+                  final rawValue = barcode?.rawValue?.trim();
+                  if (rawValue == null || rawValue.isEmpty) return;
+                  _handled = true;
+                  Navigator.of(context).pop(rawValue.toUpperCase());
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

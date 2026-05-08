@@ -90,7 +90,7 @@ npm.cmd run db:seed      # seed screenshot-style data
 npm.cmd run seed:local   # seed local data through modular scripts
 ```
 
-The scoped admin pages are Dashboard, Employees, Centers, System Cans, and Field Collection. Other sidebar modules are visual placeholders for the next phase.
+The scoped admin pages are Dashboard, Employees, Centers, System Cans, and Field Collection. System Cans can generate plain can-ID QR labels for mobile scanning. Other sidebar modules are visual placeholders for the next phase.
 
 ## Database Reference Files
 

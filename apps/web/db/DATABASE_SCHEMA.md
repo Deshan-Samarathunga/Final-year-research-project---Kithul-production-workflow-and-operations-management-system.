@@ -94,6 +94,8 @@ Stores can quantity rows inside an issue note.
 - `issueNoteId` - foreign key to `IssueNote`
 - `canCode` - system can code
 - `quantity` - collected quantity for that can
+- `phValue` - pH reading captured for the can
+- `brixValue` - Brix reading captured for the can
 - `deletedAt` - soft-delete timestamp from offline sync
 - `createdAt`, `updatedAt` - audit timestamps
 

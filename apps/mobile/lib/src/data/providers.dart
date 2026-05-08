@@ -21,7 +21,10 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 });
 
 final mobileSyncServiceProvider = Provider<MobileSyncService>((ref) {
-  return MobileSyncService(ref.watch(databaseProvider), ref.watch(authRepositoryProvider));
+  return MobileSyncService(
+    ref.watch(databaseProvider),
+    ref.watch(authRepositoryProvider),
+  );
 });
 
 final sessionProvider = FutureProvider<MobileSession?>((ref) {
@@ -37,23 +40,39 @@ final centersProvider = StreamProvider<List<CenterRecord>>((ref) {
   return ref.watch(fieldRepositoryProvider).watchCenters();
 });
 
-final issueNotesProvider = StreamProvider.family<List<IssueNoteView>, String>((ref, status) {
+final issueNotesProvider = StreamProvider.family<List<IssueNoteView>, String>((
+  ref,
+  status,
+) {
   ref.watch(seedDataProvider);
   return ref.watch(fieldRepositoryProvider).watchIssueNotes(status);
 });
 
-final issueNoteItemsProvider = StreamProvider.family<List<IssueNoteItemRecord>, String>((ref, noteLocalId) {
-  return ref.watch(fieldRepositoryProvider).watchIssueNoteItems(noteLocalId);
-});
+final issueNoteItemsProvider =
+    StreamProvider.family<List<IssueNoteItemRecord>, String>((
+      ref,
+      noteLocalId,
+    ) {
+      return ref
+          .watch(fieldRepositoryProvider)
+          .watchIssueNoteItems(noteLocalId);
+    });
 
-final transferNotesProvider = StreamProvider.family<List<TransferNoteView>, String>((ref, status) {
-  ref.watch(seedDataProvider);
-  return ref.watch(fieldRepositoryProvider).watchTransferNotes(status);
-});
+final transferNotesProvider =
+    StreamProvider.family<List<TransferNoteView>, String>((ref, status) {
+      ref.watch(seedDataProvider);
+      return ref.watch(fieldRepositoryProvider).watchTransferNotes(status);
+    });
 
-final transferNoteItemsProvider = StreamProvider.family<List<TransferNoteItemRecord>, String>((ref, transferLocalId) {
-  return ref.watch(fieldRepositoryProvider).watchTransferNoteItems(transferLocalId);
-});
+final transferNoteItemsProvider =
+    StreamProvider.family<List<TransferNoteItemRecord>, String>((
+      ref,
+      transferLocalId,
+    ) {
+      return ref
+          .watch(fieldRepositoryProvider)
+          .watchTransferNoteItems(transferLocalId);
+    });
 
 final pendingSyncCountProvider = StreamProvider<int>((ref) {
   return ref.watch(fieldRepositoryProvider).watchPendingSyncCount();
@@ -61,9 +80,10 @@ final pendingSyncCountProvider = StreamProvider<int>((ref) {
 
 final syncMetadataProvider = StreamProvider<Map<String, String>>((ref) {
   final db = ref.watch(databaseProvider);
-  return db.select(db.syncMetadata).watch().map((rows) => {
-        for (final row in rows) row.key: row.value,
-      });
+  return db
+      .select(db.syncMetadata)
+      .watch()
+      .map((rows) => {for (final row in rows) row.key: row.value});
 });
 
 final connectivityProvider = StreamProvider<List<ConnectivityResult>>((ref) {

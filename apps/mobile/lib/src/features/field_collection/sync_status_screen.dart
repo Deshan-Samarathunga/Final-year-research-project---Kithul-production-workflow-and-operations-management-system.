@@ -22,13 +22,21 @@ class _SyncStatusScreenState extends ConsumerState<SyncStatusScreen> {
   @override
   Widget build(BuildContext context) {
     final session = ref.watch(sessionProvider).asData?.value;
-    final pending = ref.watch(pendingSyncCountProvider).maybeWhen(data: (value) => value, orElse: () => 0);
-    final metadata = ref.watch(syncMetadataProvider).maybeWhen(data: (value) => value, orElse: () => <String, String>{});
+    final pending = ref
+        .watch(pendingSyncCountProvider)
+        .maybeWhen(data: (value) => value, orElse: () => 0);
+    final metadata = ref
+        .watch(syncMetadataProvider)
+        .maybeWhen(data: (value) => value, orElse: () => <String, String>{});
     final lastSync = metadata[AuthRepository.lastSyncAtKey];
     final lastError = metadata[AuthRepository.lastSyncErrorKey];
 
     return Scaffold(
-      appBar: const KithulAppBar(title: 'Sync Status', subtitle: 'Local WiFi sync', showBack: true),
+      appBar: const KithulAppBar(
+        title: 'Sync Status',
+        subtitle: 'Local WiFi sync',
+        showBack: true,
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
@@ -38,19 +46,35 @@ class _SyncStatusScreenState extends ConsumerState<SyncStatusScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Connection', style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    'Connection',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   const SizedBox(height: 12),
-                  _InfoRow(label: 'Server', value: session?.serverUrl ?? 'Not logged in'),
+                  _InfoRow(
+                    label: 'Server',
+                    value: session?.serverUrl ?? 'Not logged in',
+                  ),
                   _InfoRow(label: 'User', value: session?.displayName ?? '-'),
                   _InfoRow(label: 'Pending changes', value: pending.toString()),
-                  _InfoRow(label: 'Last sync', value: _formatLastSync(lastSync)),
-                  if (lastError != null && lastError.isNotEmpty) _InfoRow(label: 'Last error', value: lastError, danger: true),
+                  _InfoRow(
+                    label: 'Last sync',
+                    value: _formatLastSync(lastSync),
+                  ),
+                  if (lastError != null && lastError.isNotEmpty)
+                    _InfoRow(
+                      label: 'Last error',
+                      value: lastError,
+                      danger: true,
+                    ),
                   if (_message != null) ...[
                     const SizedBox(height: 12),
                     Text(
                       _message!,
                       style: TextStyle(
-                        color: _message!.contains('completed') ? kithulGreen : Colors.red.shade700,
+                        color: _message!.contains('completed')
+                            ? kithulGreen
+                            : Colors.red.shade700,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -63,7 +87,11 @@ class _SyncStatusScreenState extends ConsumerState<SyncStatusScreen> {
           FilledButton.icon(
             onPressed: _syncing ? null : _syncNow,
             icon: _syncing
-                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
                 : const Icon(Icons.sync),
             label: const Text('Sync now'),
           ),
@@ -112,7 +140,11 @@ class _SyncStatusScreenState extends ConsumerState<SyncStatusScreen> {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.label, required this.value, this.danger = false});
+  const _InfoRow({
+    required this.label,
+    required this.value,
+    this.danger = false,
+  });
 
   final String label;
   final String value;
@@ -127,12 +159,21 @@ class _InfoRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 118,
-            child: Text(label, style: const TextStyle(color: kithulMuted, fontWeight: FontWeight.w700)),
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: kithulMuted,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
           Expanded(
             child: Text(
               value,
-              style: TextStyle(color: danger ? Colors.red.shade700 : kithulInk, fontWeight: FontWeight.w700),
+              style: TextStyle(
+                color: danger ? Colors.red.shade700 : kithulInk,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],

@@ -15,10 +15,12 @@ class TransferNoteDetailScreen extends ConsumerStatefulWidget {
   final String transferLocalId;
 
   @override
-  ConsumerState<TransferNoteDetailScreen> createState() => _TransferNoteDetailScreenState();
+  ConsumerState<TransferNoteDetailScreen> createState() =>
+      _TransferNoteDetailScreenState();
 }
 
-class _TransferNoteDetailScreenState extends ConsumerState<TransferNoteDetailScreen> {
+class _TransferNoteDetailScreenState
+    extends ConsumerState<TransferNoteDetailScreen> {
   final _formKey = GlobalKey<FormState>();
   final _canController = TextEditingController();
   late Future<TransferNoteView?> _noteFuture;
@@ -36,7 +38,9 @@ class _TransferNoteDetailScreenState extends ConsumerState<TransferNoteDetailScr
   }
 
   void _reload() {
-    _noteFuture = ref.read(fieldRepositoryProvider).getTransferNote(widget.transferLocalId);
+    _noteFuture = ref
+        .read(fieldRepositoryProvider)
+        .getTransferNote(widget.transferLocalId);
   }
 
   @override
@@ -44,7 +48,11 @@ class _TransferNoteDetailScreenState extends ConsumerState<TransferNoteDetailScr
     final items = ref.watch(transferNoteItemsProvider(widget.transferLocalId));
 
     return Scaffold(
-      appBar: const KithulAppBar(title: 'Transfer Note', subtitle: 'Empty can transfer', showBack: true),
+      appBar: const KithulAppBar(
+        title: 'Transfer Note',
+        subtitle: 'Empty can transfer',
+        showBack: true,
+      ),
       body: FutureBuilder<TransferNoteView?>(
         future: _noteFuture,
         builder: (context, snapshot) {
@@ -77,24 +85,37 @@ class _TransferNoteDetailScreenState extends ConsumerState<TransferNoteDetailScr
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Text('Add empty can', style: Theme.of(context).textTheme.titleMedium),
+                          Text(
+                            'Add empty can',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: _canController,
                             textCapitalization: TextCapitalization.characters,
-                            decoration: const InputDecoration(labelText: 'Select / Type Can ID', prefixIcon: Icon(Icons.search)),
-                            validator: (value) => value == null || value.trim().isEmpty ? 'Enter can ID' : null,
+                            decoration: const InputDecoration(
+                              labelText: 'Select / Type Can ID',
+                              prefixIcon: Icon(Icons.search),
+                            ),
+                            validator: (value) =>
+                                value == null || value.trim().isEmpty
+                                ? 'Enter can ID'
+                                : null,
                           ),
                           const SizedBox(height: 12),
                           FilledButton.icon(
                             onPressed: () async {
                               if (!_formKey.currentState!.validate()) return;
-                              await ref.read(fieldRepositoryProvider).addTransferCan(
+                              await ref
+                                  .read(fieldRepositoryProvider)
+                                  .addTransferCan(
                                     transferLocalId: widget.transferLocalId,
                                     canCode: _canController.text,
                                   );
                               _canController.clear();
-                              unawaited(ref.read(mobileSyncServiceProvider).syncNow());
+                              unawaited(
+                                ref.read(mobileSyncServiceProvider).syncNow(),
+                              );
                               setState(_reload);
                             },
                             icon: const Icon(Icons.add),
@@ -113,7 +134,9 @@ class _TransferNoteDetailScreenState extends ConsumerState<TransferNoteDetailScr
                   items: rows,
                   canEdit: canEdit,
                   onDelete: (itemLocalId) async {
-                    await ref.read(fieldRepositoryProvider).deleteTransferCan(itemLocalId, widget.transferLocalId);
+                    await ref
+                        .read(fieldRepositoryProvider)
+                        .deleteTransferCan(itemLocalId, widget.transferLocalId);
                     unawaited(ref.read(mobileSyncServiceProvider).syncNow());
                     setState(_reload);
                   },
@@ -123,7 +146,9 @@ class _TransferNoteDetailScreenState extends ConsumerState<TransferNoteDetailScr
               if (canEdit)
                 FilledButton.icon(
                   onPressed: () async {
-                    await ref.read(fieldRepositoryProvider).completeTransferNote(widget.transferLocalId);
+                    await ref
+                        .read(fieldRepositoryProvider)
+                        .completeTransferNote(widget.transferLocalId);
                     unawaited(ref.read(mobileSyncServiceProvider).syncNow());
                     setState(_reload);
                   },
@@ -155,14 +180,25 @@ class _TransferHeader extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(child: Text(note.transferNoteNo, style: Theme.of(context).textTheme.titleLarge)),
+                Expanded(
+                  child: Text(
+                    note.transferNoteNo,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                ),
                 StatusBadge(label: note.status),
               ],
             ),
             const SizedBox(height: 8),
-            Text(shortDateFormat.format(note.transferDate), style: const TextStyle(color: kithulMuted)),
+            Text(
+              shortDateFormat.format(note.transferDate),
+              style: const TextStyle(color: kithulMuted),
+            ),
             const SizedBox(height: 4),
-            Text(view.center?.agent ?? 'No center agent', style: const TextStyle(fontWeight: FontWeight.w700)),
+            Text(
+              view.center?.agent ?? 'No center agent',
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
             const SizedBox(height: 12),
             MetricChip(label: 'Can count', value: note.canCount.toString()),
           ],
@@ -173,7 +209,11 @@ class _TransferHeader extends StatelessWidget {
 }
 
 class _TransferCanList extends StatelessWidget {
-  const _TransferCanList({required this.items, required this.canEdit, required this.onDelete});
+  const _TransferCanList({
+    required this.items,
+    required this.canEdit,
+    required this.onDelete,
+  });
 
   final List<TransferNoteItemRecord> items;
   final bool canEdit;
@@ -201,13 +241,19 @@ class _TransferCanList extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 8),
             child: Card(
               child: ListTile(
-                title: Text(item.canCode, style: const TextStyle(fontWeight: FontWeight.w800)),
+                title: Text(
+                  item.canCode,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
                 subtitle: Text(canEdit ? 'Waiting to sync' : 'Completed'),
                 trailing: canEdit
                     ? IconButton(
                         tooltip: 'Delete can',
                         onPressed: () => onDelete(item.localId),
-                        icon: Icon(Icons.delete_outline, color: Colors.red.shade600),
+                        icon: Icon(
+                          Icons.delete_outline,
+                          color: Colors.red.shade600,
+                        ),
                       )
                     : null,
               ),

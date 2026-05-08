@@ -2212,6 +2212,30 @@ class $IssueNoteItemsTable extends IssueNoteItems
     type: DriftSqlType.double,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _phValueMeta = const VerificationMeta(
+    'phValue',
+  );
+  @override
+  late final GeneratedColumn<double> phValue = GeneratedColumn<double>(
+    'ph_value',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _brixValueMeta = const VerificationMeta(
+    'brixValue',
+  );
+  @override
+  late final GeneratedColumn<double> brixValue = GeneratedColumn<double>(
+    'brix_value',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _syncStatusMeta = const VerificationMeta(
     'syncStatus',
   );
@@ -2267,6 +2291,8 @@ class $IssueNoteItemsTable extends IssueNoteItems
     issueNoteLocalId,
     canCode,
     quantity,
+    phValue,
+    brixValue,
     syncStatus,
     createdAt,
     updatedAt,
@@ -2328,6 +2354,18 @@ class $IssueNoteItemsTable extends IssueNoteItems
     } else if (isInserting) {
       context.missing(_quantityMeta);
     }
+    if (data.containsKey('ph_value')) {
+      context.handle(
+        _phValueMeta,
+        phValue.isAcceptableOrUnknown(data['ph_value']!, _phValueMeta),
+      );
+    }
+    if (data.containsKey('brix_value')) {
+      context.handle(
+        _brixValueMeta,
+        brixValue.isAcceptableOrUnknown(data['brix_value']!, _brixValueMeta),
+      );
+    }
     if (data.containsKey('sync_status')) {
       context.handle(
         _syncStatusMeta,
@@ -2385,6 +2423,14 @@ class $IssueNoteItemsTable extends IssueNoteItems
         DriftSqlType.double,
         data['${effectivePrefix}quantity'],
       )!,
+      phValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}ph_value'],
+      )!,
+      brixValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}brix_value'],
+      )!,
       syncStatus: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}sync_status'],
@@ -2418,6 +2464,8 @@ class IssueNoteItemRecord extends DataClass
   final String issueNoteLocalId;
   final String canCode;
   final double quantity;
+  final double phValue;
+  final double brixValue;
   final String syncStatus;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -2429,6 +2477,8 @@ class IssueNoteItemRecord extends DataClass
     required this.issueNoteLocalId,
     required this.canCode,
     required this.quantity,
+    required this.phValue,
+    required this.brixValue,
     required this.syncStatus,
     required this.createdAt,
     required this.updatedAt,
@@ -2445,6 +2495,8 @@ class IssueNoteItemRecord extends DataClass
     map['issue_note_local_id'] = Variable<String>(issueNoteLocalId);
     map['can_code'] = Variable<String>(canCode);
     map['quantity'] = Variable<double>(quantity);
+    map['ph_value'] = Variable<double>(phValue);
+    map['brix_value'] = Variable<double>(brixValue);
     map['sync_status'] = Variable<String>(syncStatus);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -2464,6 +2516,8 @@ class IssueNoteItemRecord extends DataClass
       issueNoteLocalId: Value(issueNoteLocalId),
       canCode: Value(canCode),
       quantity: Value(quantity),
+      phValue: Value(phValue),
+      brixValue: Value(brixValue),
       syncStatus: Value(syncStatus),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
@@ -2485,6 +2539,8 @@ class IssueNoteItemRecord extends DataClass
       issueNoteLocalId: serializer.fromJson<String>(json['issueNoteLocalId']),
       canCode: serializer.fromJson<String>(json['canCode']),
       quantity: serializer.fromJson<double>(json['quantity']),
+      phValue: serializer.fromJson<double>(json['phValue']),
+      brixValue: serializer.fromJson<double>(json['brixValue']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
@@ -2501,6 +2557,8 @@ class IssueNoteItemRecord extends DataClass
       'issueNoteLocalId': serializer.toJson<String>(issueNoteLocalId),
       'canCode': serializer.toJson<String>(canCode),
       'quantity': serializer.toJson<double>(quantity),
+      'phValue': serializer.toJson<double>(phValue),
+      'brixValue': serializer.toJson<double>(brixValue),
       'syncStatus': serializer.toJson<String>(syncStatus),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
@@ -2515,6 +2573,8 @@ class IssueNoteItemRecord extends DataClass
     String? issueNoteLocalId,
     String? canCode,
     double? quantity,
+    double? phValue,
+    double? brixValue,
     String? syncStatus,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -2526,6 +2586,8 @@ class IssueNoteItemRecord extends DataClass
     issueNoteLocalId: issueNoteLocalId ?? this.issueNoteLocalId,
     canCode: canCode ?? this.canCode,
     quantity: quantity ?? this.quantity,
+    phValue: phValue ?? this.phValue,
+    brixValue: brixValue ?? this.brixValue,
     syncStatus: syncStatus ?? this.syncStatus,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
@@ -2541,6 +2603,8 @@ class IssueNoteItemRecord extends DataClass
           : this.issueNoteLocalId,
       canCode: data.canCode.present ? data.canCode.value : this.canCode,
       quantity: data.quantity.present ? data.quantity.value : this.quantity,
+      phValue: data.phValue.present ? data.phValue.value : this.phValue,
+      brixValue: data.brixValue.present ? data.brixValue.value : this.brixValue,
       syncStatus: data.syncStatus.present
           ? data.syncStatus.value
           : this.syncStatus,
@@ -2559,6 +2623,8 @@ class IssueNoteItemRecord extends DataClass
           ..write('issueNoteLocalId: $issueNoteLocalId, ')
           ..write('canCode: $canCode, ')
           ..write('quantity: $quantity, ')
+          ..write('phValue: $phValue, ')
+          ..write('brixValue: $brixValue, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
@@ -2575,6 +2641,8 @@ class IssueNoteItemRecord extends DataClass
     issueNoteLocalId,
     canCode,
     quantity,
+    phValue,
+    brixValue,
     syncStatus,
     createdAt,
     updatedAt,
@@ -2590,6 +2658,8 @@ class IssueNoteItemRecord extends DataClass
           other.issueNoteLocalId == this.issueNoteLocalId &&
           other.canCode == this.canCode &&
           other.quantity == this.quantity &&
+          other.phValue == this.phValue &&
+          other.brixValue == this.brixValue &&
           other.syncStatus == this.syncStatus &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
@@ -2603,6 +2673,8 @@ class IssueNoteItemsCompanion extends UpdateCompanion<IssueNoteItemRecord> {
   final Value<String> issueNoteLocalId;
   final Value<String> canCode;
   final Value<double> quantity;
+  final Value<double> phValue;
+  final Value<double> brixValue;
   final Value<String> syncStatus;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
@@ -2614,6 +2686,8 @@ class IssueNoteItemsCompanion extends UpdateCompanion<IssueNoteItemRecord> {
     this.issueNoteLocalId = const Value.absent(),
     this.canCode = const Value.absent(),
     this.quantity = const Value.absent(),
+    this.phValue = const Value.absent(),
+    this.brixValue = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -2626,6 +2700,8 @@ class IssueNoteItemsCompanion extends UpdateCompanion<IssueNoteItemRecord> {
     required String issueNoteLocalId,
     required String canCode,
     required double quantity,
+    this.phValue = const Value.absent(),
+    this.brixValue = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -2641,6 +2717,8 @@ class IssueNoteItemsCompanion extends UpdateCompanion<IssueNoteItemRecord> {
     Expression<String>? issueNoteLocalId,
     Expression<String>? canCode,
     Expression<double>? quantity,
+    Expression<double>? phValue,
+    Expression<double>? brixValue,
     Expression<String>? syncStatus,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
@@ -2653,6 +2731,8 @@ class IssueNoteItemsCompanion extends UpdateCompanion<IssueNoteItemRecord> {
       if (issueNoteLocalId != null) 'issue_note_local_id': issueNoteLocalId,
       if (canCode != null) 'can_code': canCode,
       if (quantity != null) 'quantity': quantity,
+      if (phValue != null) 'ph_value': phValue,
+      if (brixValue != null) 'brix_value': brixValue,
       if (syncStatus != null) 'sync_status': syncStatus,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
@@ -2667,6 +2747,8 @@ class IssueNoteItemsCompanion extends UpdateCompanion<IssueNoteItemRecord> {
     Value<String>? issueNoteLocalId,
     Value<String>? canCode,
     Value<double>? quantity,
+    Value<double>? phValue,
+    Value<double>? brixValue,
     Value<String>? syncStatus,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
@@ -2679,6 +2761,8 @@ class IssueNoteItemsCompanion extends UpdateCompanion<IssueNoteItemRecord> {
       issueNoteLocalId: issueNoteLocalId ?? this.issueNoteLocalId,
       canCode: canCode ?? this.canCode,
       quantity: quantity ?? this.quantity,
+      phValue: phValue ?? this.phValue,
+      brixValue: brixValue ?? this.brixValue,
       syncStatus: syncStatus ?? this.syncStatus,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -2707,6 +2791,12 @@ class IssueNoteItemsCompanion extends UpdateCompanion<IssueNoteItemRecord> {
     if (quantity.present) {
       map['quantity'] = Variable<double>(quantity.value);
     }
+    if (phValue.present) {
+      map['ph_value'] = Variable<double>(phValue.value);
+    }
+    if (brixValue.present) {
+      map['brix_value'] = Variable<double>(brixValue.value);
+    }
     if (syncStatus.present) {
       map['sync_status'] = Variable<String>(syncStatus.value);
     }
@@ -2731,6 +2821,8 @@ class IssueNoteItemsCompanion extends UpdateCompanion<IssueNoteItemRecord> {
           ..write('issueNoteLocalId: $issueNoteLocalId, ')
           ..write('canCode: $canCode, ')
           ..write('quantity: $quantity, ')
+          ..write('phValue: $phValue, ')
+          ..write('brixValue: $brixValue, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
@@ -5964,6 +6056,8 @@ typedef $$IssueNoteItemsTableCreateCompanionBuilder =
       required String issueNoteLocalId,
       required String canCode,
       required double quantity,
+      Value<double> phValue,
+      Value<double> brixValue,
       Value<String> syncStatus,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
@@ -5977,6 +6071,8 @@ typedef $$IssueNoteItemsTableUpdateCompanionBuilder =
       Value<String> issueNoteLocalId,
       Value<String> canCode,
       Value<double> quantity,
+      Value<double> phValue,
+      Value<double> brixValue,
       Value<String> syncStatus,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
@@ -6019,6 +6115,16 @@ class $$IssueNoteItemsTableFilterComposer
 
   ColumnFilters<double> get quantity => $composableBuilder(
     column: $table.quantity,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get phValue => $composableBuilder(
+    column: $table.phValue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get brixValue => $composableBuilder(
+    column: $table.brixValue,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6082,6 +6188,16 @@ class $$IssueNoteItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get phValue => $composableBuilder(
+    column: $table.phValue,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get brixValue => $composableBuilder(
+    column: $table.brixValue,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
     builder: (column) => ColumnOrderings(column),
@@ -6131,6 +6247,12 @@ class $$IssueNoteItemsTableAnnotationComposer
 
   GeneratedColumn<double> get quantity =>
       $composableBuilder(column: $table.quantity, builder: (column) => column);
+
+  GeneratedColumn<double> get phValue =>
+      $composableBuilder(column: $table.phValue, builder: (column) => column);
+
+  GeneratedColumn<double> get brixValue =>
+      $composableBuilder(column: $table.brixValue, builder: (column) => column);
 
   GeneratedColumn<String> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
@@ -6190,6 +6312,8 @@ class $$IssueNoteItemsTableTableManager
                 Value<String> issueNoteLocalId = const Value.absent(),
                 Value<String> canCode = const Value.absent(),
                 Value<double> quantity = const Value.absent(),
+                Value<double> phValue = const Value.absent(),
+                Value<double> brixValue = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
@@ -6201,6 +6325,8 @@ class $$IssueNoteItemsTableTableManager
                 issueNoteLocalId: issueNoteLocalId,
                 canCode: canCode,
                 quantity: quantity,
+                phValue: phValue,
+                brixValue: brixValue,
                 syncStatus: syncStatus,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
@@ -6214,6 +6340,8 @@ class $$IssueNoteItemsTableTableManager
                 required String issueNoteLocalId,
                 required String canCode,
                 required double quantity,
+                Value<double> phValue = const Value.absent(),
+                Value<double> brixValue = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
@@ -6225,6 +6353,8 @@ class $$IssueNoteItemsTableTableManager
                 issueNoteLocalId: issueNoteLocalId,
                 canCode: canCode,
                 quantity: quantity,
+                phValue: phValue,
+                brixValue: brixValue,
                 syncStatus: syncStatus,
                 createdAt: createdAt,
                 updatedAt: updatedAt,

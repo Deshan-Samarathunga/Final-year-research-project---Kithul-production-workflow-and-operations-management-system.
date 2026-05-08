@@ -35,7 +35,8 @@ class Centers extends Table {
   TextColumn get agent => text()();
   TextColumn get contactPhone => text().nullable()();
   TextColumn get status => text().withDefault(const Constant('Active'))();
-  TextColumn get syncStatus => text().withDefault(const Constant(SyncStatus.synced))();
+  TextColumn get syncStatus =>
+      text().withDefault(const Constant(SyncStatus.synced))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get deletedAt => dateTime().nullable()();
@@ -50,7 +51,8 @@ class SystemCans extends Table {
   TextColumn get status => text().withDefault(const Constant('In warehouse'))();
   TextColumn get agentName => text().nullable()();
   TextColumn get reference => text().nullable()();
-  TextColumn get syncStatus => text().withDefault(const Constant(SyncStatus.synced))();
+  TextColumn get syncStatus =>
+      text().withDefault(const Constant(SyncStatus.synced))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get deletedAt => dateTime().nullable()();
@@ -65,10 +67,12 @@ class IssueNotes extends Table {
   DateTimeColumn get collectionDate => dateTime()();
   TextColumn get centerLocalId => text()();
   TextColumn get type => text()();
-  TextColumn get status => text().withDefault(const Constant(NoteStatus.active))();
+  TextColumn get status =>
+      text().withDefault(const Constant(NoteStatus.active))();
   IntColumn get canCount => integer().withDefault(const Constant(0))();
   RealColumn get totalQty => real().withDefault(const Constant(0))();
-  TextColumn get syncStatus => text().withDefault(const Constant(SyncStatus.synced))();
+  TextColumn get syncStatus =>
+      text().withDefault(const Constant(SyncStatus.synced))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get deletedAt => dateTime().nullable()();
@@ -82,7 +86,10 @@ class IssueNoteItems extends Table {
   TextColumn get issueNoteLocalId => text()();
   TextColumn get canCode => text()();
   RealColumn get quantity => real()();
-  TextColumn get syncStatus => text().withDefault(const Constant(SyncStatus.pendingCreate))();
+  RealColumn get phValue => real().withDefault(const Constant(0))();
+  RealColumn get brixValue => real().withDefault(const Constant(0))();
+  TextColumn get syncStatus =>
+      text().withDefault(const Constant(SyncStatus.pendingCreate))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get deletedAt => dateTime().nullable()();
@@ -96,9 +103,11 @@ class TransferNotes extends Table {
   TextColumn get transferNoteNo => text()();
   DateTimeColumn get transferDate => dateTime()();
   TextColumn get centerLocalId => text()();
-  TextColumn get status => text().withDefault(const Constant(NoteStatus.active))();
+  TextColumn get status =>
+      text().withDefault(const Constant(NoteStatus.active))();
   IntColumn get canCount => integer().withDefault(const Constant(0))();
-  TextColumn get syncStatus => text().withDefault(const Constant(SyncStatus.pendingCreate))();
+  TextColumn get syncStatus =>
+      text().withDefault(const Constant(SyncStatus.pendingCreate))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get deletedAt => dateTime().nullable()();
@@ -111,7 +120,8 @@ class TransferNoteItems extends Table {
   TextColumn get remoteId => text().nullable()();
   TextColumn get transferNoteLocalId => text()();
   TextColumn get canCode => text()();
-  TextColumn get syncStatus => text().withDefault(const Constant(SyncStatus.pendingCreate))();
+  TextColumn get syncStatus =>
+      text().withDefault(const Constant(SyncStatus.pendingCreate))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get deletedAt => dateTime().nullable()();
@@ -158,17 +168,21 @@ final class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onUpgrade: (migrator, from, to) async {
-          if (from < 2) {
-            await migrator.addColumn(issueNoteItems, issueNoteItems.remoteId);
-            await migrator.addColumn(transferNoteItems, transferNoteItems.remoteId);
-          }
-        },
-      );
+    onUpgrade: (migrator, from, to) async {
+      if (from < 2) {
+        await migrator.addColumn(issueNoteItems, issueNoteItems.remoteId);
+        await migrator.addColumn(transferNoteItems, transferNoteItems.remoteId);
+      }
+      if (from < 3) {
+        await migrator.addColumn(issueNoteItems, issueNoteItems.phValue);
+        await migrator.addColumn(issueNoteItems, issueNoteItems.brixValue);
+      }
+    },
+  );
 }
 
 LazyDatabase _openConnection() {

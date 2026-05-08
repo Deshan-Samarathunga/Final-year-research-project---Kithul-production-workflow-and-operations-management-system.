@@ -151,6 +151,8 @@ describe("mobile sync routes", () => {
               issueNoteLocalId: "note-local",
               canCode: "AR001",
               quantity: 12.5,
+              phValue: 6.2,
+              brixValue: 14.8,
               updatedAt: "2026-05-08T09:15:00.000Z"
             }
           ],
@@ -162,5 +164,11 @@ describe("mobile sync routes", () => {
     expect(response.status).toBe(200);
     expect(mockPrisma.issueNote.upsert).toHaveBeenCalledTimes(1);
     expect(mockPrisma.issueNoteItem.upsert).toHaveBeenCalledTimes(1);
+    expect(mockPrisma.issueNoteItem.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ phValue: 6.2, brixValue: 14.8 }),
+        update: expect.objectContaining({ phValue: 6.2, brixValue: 14.8 })
+      })
+    );
   });
 });

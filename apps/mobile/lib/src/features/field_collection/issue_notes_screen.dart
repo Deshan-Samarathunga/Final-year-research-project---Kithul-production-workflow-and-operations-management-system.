@@ -23,14 +23,12 @@ class _IssueNotesScreenState extends ConsumerState<IssueNotesScreen> {
   @override
   Widget build(BuildContext context) {
     final seed = ref.watch(seedDataProvider);
-    final activeCount = ref.watch(issueNotesProvider(NoteStatus.active)).maybeWhen(
-          data: (items) => items.length,
-          orElse: () => 0,
-        );
-    final completedCount = ref.watch(issueNotesProvider(NoteStatus.completed)).maybeWhen(
-          data: (items) => items.length,
-          orElse: () => 0,
-        );
+    final activeCount = ref
+        .watch(issueNotesProvider(NoteStatus.active))
+        .maybeWhen(data: (items) => items.length, orElse: () => 0);
+    final completedCount = ref
+        .watch(issueNotesProvider(NoteStatus.completed))
+        .maybeWhen(data: (items) => items.length, orElse: () => 0);
 
     return Scaffold(
       appBar: KithulAppBar(
@@ -46,7 +44,8 @@ class _IssueNotesScreenState extends ConsumerState<IssueNotesScreen> {
       ),
       body: seed.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('Could not load offline data: $error')),
+        error: (error, _) =>
+            Center(child: Text('Could not load offline data: $error')),
         data: (_) => Column(
           children: [
             Padding(
@@ -55,11 +54,18 @@ class _IssueNotesScreenState extends ConsumerState<IssueNotesScreen> {
                 children: [
                   SegmentedButton<String>(
                     segments: [
-                      ButtonSegment(value: NoteStatus.active, label: Text('Active  $activeCount')),
-                      ButtonSegment(value: NoteStatus.completed, label: Text('Completed  $completedCount')),
+                      ButtonSegment(
+                        value: NoteStatus.active,
+                        label: Text('Active  $activeCount'),
+                      ),
+                      ButtonSegment(
+                        value: NoteStatus.completed,
+                        label: Text('Completed  $completedCount'),
+                      ),
                     ],
                     selected: {_status},
-                    onSelectionChanged: (value) => setState(() => _status = value.first),
+                    onSelectionChanged: (value) =>
+                        setState(() => _status = value.first),
                     showSelectedIcon: false,
                   ),
                   const SizedBox(height: 12),
@@ -67,7 +73,8 @@ class _IssueNotesScreenState extends ConsumerState<IssueNotesScreen> {
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: () => context.push('/field-collection/transfers'),
+                          onPressed: () =>
+                              context.push('/field-collection/transfers'),
                           icon: const Icon(Icons.arrow_forward),
                           label: const Text('Transfer notes'),
                         ),
@@ -103,12 +110,15 @@ class _IssueNoteList extends ConsumerWidget {
     final notes = ref.watch(issueNotesProvider(status));
     return notes.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => Center(child: Text('Could not load issue notes: $error')),
+      error: (error, _) =>
+          Center(child: Text('Could not load issue notes: $error')),
       data: (items) {
         if (items.isEmpty) {
           return EmptyState(
             icon: Icons.assignment_outlined,
-            title: status == NoteStatus.active ? 'No active issue notes yet' : 'No completed issue notes yet',
+            title: status == NoteStatus.active
+                ? 'No active issue notes yet'
+                : 'No completed issue notes yet',
             message: status == NoteStatus.active
                 ? 'Create a new issue note before visiting a collection center.'
                 : 'Submitted notes will appear here.',
@@ -157,7 +167,10 @@ class _IssueNoteCard extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(note.issueNoteName, style: Theme.of(context).textTheme.titleMedium),
+                      Text(
+                        note.issueNoteName,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
                       const SizedBox(height: 6),
                       Text(
                         '${shortDateFormat.format(note.collectionDate)} - ${center?.agent ?? 'No agent'}',
@@ -174,9 +187,17 @@ class _IssueNoteCard extends ConsumerWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                MetricChip(label: 'Type', value: note.type, color: kithulOrange),
+                MetricChip(
+                  label: 'Type',
+                  value: note.type,
+                  color: kithulOrange,
+                ),
                 MetricChip(label: 'Cans', value: note.canCount.toString()),
-                MetricChip(label: 'Total qty', value: quantityFormat.format(note.totalQty), color: kithulGreen),
+                MetricChip(
+                  label: 'Total qty',
+                  value: quantityFormat.format(note.totalQty),
+                  color: kithulGreen,
+                ),
               ],
             ),
             const SizedBox(height: 14),
@@ -185,7 +206,9 @@ class _IssueNoteCard extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () => context.push('/field-collection/notes/${note.localId}'),
+                      onPressed: () => context.push(
+                        '/field-collection/notes/${note.localId}',
+                      ),
                       icon: const Icon(Icons.search),
                       label: const Text('View'),
                     ),
@@ -194,8 +217,12 @@ class _IssueNoteCard extends ConsumerWidget {
                   Expanded(
                     child: FilledButton.icon(
                       onPressed: () async {
-                        await ref.read(fieldRepositoryProvider).reopenIssueNote(note.localId);
-                        unawaited(ref.read(mobileSyncServiceProvider).syncNow());
+                        await ref
+                            .read(fieldRepositoryProvider)
+                            .reopenIssueNote(note.localId);
+                        unawaited(
+                          ref.read(mobileSyncServiceProvider).syncNow(),
+                        );
                       },
                       icon: const Icon(Icons.restart_alt),
                       label: const Text('Reopen'),
@@ -210,7 +237,9 @@ class _IssueNoteCard extends ConsumerWidget {
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: () => context.push('/field-collection/notes/${note.localId}'),
+                          onPressed: () => context.push(
+                            '/field-collection/notes/${note.localId}',
+                          ),
                           icon: const Icon(Icons.arrow_forward),
                           label: const Text('Continue'),
                         ),
@@ -219,8 +248,12 @@ class _IssueNoteCard extends ConsumerWidget {
                       Expanded(
                         child: FilledButton.icon(
                           onPressed: () async {
-                            await ref.read(fieldRepositoryProvider).submitIssueNote(note.localId);
-                            unawaited(ref.read(mobileSyncServiceProvider).syncNow());
+                            await ref
+                                .read(fieldRepositoryProvider)
+                                .submitIssueNote(note.localId);
+                            unawaited(
+                              ref.read(mobileSyncServiceProvider).syncNow(),
+                            );
                           },
                           icon: const Icon(Icons.check_circle_outline),
                           label: const Text('Submit'),
@@ -232,10 +265,16 @@ class _IssueNoteCard extends ConsumerWidget {
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
-                      style: FilledButton.styleFrom(backgroundColor: Colors.red.shade600),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.red.shade600,
+                      ),
                       onPressed: () async {
-                        await ref.read(fieldRepositoryProvider).deleteIssueNote(note.localId);
-                        unawaited(ref.read(mobileSyncServiceProvider).syncNow());
+                        await ref
+                            .read(fieldRepositoryProvider)
+                            .deleteIssueNote(note.localId);
+                        unawaited(
+                          ref.read(mobileSyncServiceProvider).syncNow(),
+                        );
                       },
                       icon: const Icon(Icons.delete_outline),
                       label: const Text('Delete'),
@@ -267,7 +306,8 @@ class _CreateIssueNoteForm extends ConsumerStatefulWidget {
   const _CreateIssueNoteForm();
 
   @override
-  ConsumerState<_CreateIssueNoteForm> createState() => _CreateIssueNoteFormState();
+  ConsumerState<_CreateIssueNoteForm> createState() =>
+      _CreateIssueNoteFormState();
 }
 
 class _CreateIssueNoteFormState extends ConsumerState<_CreateIssueNoteForm> {
@@ -285,10 +325,9 @@ class _CreateIssueNoteFormState extends ConsumerState<_CreateIssueNoteForm> {
 
   @override
   Widget build(BuildContext context) {
-    final centers = ref.watch(centersProvider).maybeWhen(
-          data: (items) => items,
-          orElse: () => <CenterRecord>[],
-        );
+    final centers = ref
+        .watch(centersProvider)
+        .maybeWhen(data: (items) => items, orElse: () => <CenterRecord>[]);
 
     return Form(
       key: _formKey,
@@ -298,7 +337,9 @@ class _CreateIssueNoteFormState extends ConsumerState<_CreateIssueNoteForm> {
           TextFormField(
             controller: _nameController,
             decoration: const InputDecoration(labelText: 'Issue note name'),
-            validator: (value) => value == null || value.trim().isEmpty ? 'Enter issue note name' : null,
+            validator: (value) => value == null || value.trim().isEmpty
+                ? 'Enter issue note name'
+                : null,
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
@@ -322,27 +363,40 @@ class _CreateIssueNoteFormState extends ConsumerState<_CreateIssueNoteForm> {
               for (final center in centers)
                 DropdownMenuItem(
                   value: center.localId,
-                  child: Text('${center.centerCode} - ${center.agent}', overflow: TextOverflow.ellipsis),
+                  child: Text(
+                    '${center.centerCode} - ${center.agent}',
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
             ],
             onChanged: (value) => setState(() => _centerLocalId = value),
-            validator: (value) => value == null ? 'Select collection center' : null,
+            validator: (value) =>
+                value == null ? 'Select collection center' : null,
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
             initialValue: _type,
             decoration: const InputDecoration(labelText: 'Issue note type'),
             items: const [
-              DropdownMenuItem(value: ProductType.sap, child: Text(ProductType.sap)),
-              DropdownMenuItem(value: ProductType.treacle, child: Text(ProductType.treacle)),
+              DropdownMenuItem(
+                value: ProductType.sap,
+                child: Text(ProductType.sap),
+              ),
+              DropdownMenuItem(
+                value: ProductType.treacle,
+                child: Text(ProductType.treacle),
+              ),
             ],
-            onChanged: (value) => setState(() => _type = value ?? ProductType.sap),
+            onChanged: (value) =>
+                setState(() => _type = value ?? ProductType.sap),
           ),
           const SizedBox(height: 18),
           FilledButton.icon(
             onPressed: () async {
               if (!_formKey.currentState!.validate()) return;
-              await ref.read(fieldRepositoryProvider).createIssueNote(
+              await ref
+                  .read(fieldRepositoryProvider)
+                  .createIssueNote(
                     name: _nameController.text.trim(),
                     collectionDate: _collectionDate,
                     centerLocalId: _centerLocalId!,

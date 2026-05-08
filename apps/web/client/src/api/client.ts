@@ -116,6 +116,8 @@ export type IssueNoteItem = {
   issueNoteId: number;
   canCode: string;
   quantity: number;
+  phValue: number;
+  brixValue: number;
   deletedAt: string | null;
   createdAt: string;
   updatedAt: string;

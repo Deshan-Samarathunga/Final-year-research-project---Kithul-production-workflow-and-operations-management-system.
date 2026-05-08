@@ -18,12 +18,14 @@ Future<AppDatabase> pumpFieldCollectorApp(
     ProviderScope(
       overrides: [
         databaseProvider.overrideWithValue(database),
-        sessionProvider.overrideWith((ref) async => const MobileSession(
-              token: 'test-token',
-              serverUrl: 'http://127.0.0.1:4000',
-              userId: 'field01',
-              displayName: 'Field Collector',
-            )),
+        sessionProvider.overrideWith(
+          (ref) async => const MobileSession(
+            token: 'test-token',
+            serverUrl: 'http://127.0.0.1:4000',
+            userId: 'field01',
+            displayName: 'Field Collector',
+          ),
+        ),
       ],
       child: KithulFlowMobileApp(initialLocation: initialLocation),
     ),
@@ -56,7 +58,9 @@ void main() {
     expect(find.text('Enter issue note name'), findsOneWidget);
   });
 
-  testWidgets('validates can quantity before adding to issue note', (tester) async {
+  testWidgets('validates can quantity before adding to issue note', (
+    tester,
+  ) async {
     await pumpFieldCollectorApp(tester);
 
     await tester.tap(find.text('Continue').first);
@@ -68,6 +72,23 @@ void main() {
     await tester.pump();
 
     expect(find.text('Quantity must be more than 0'), findsOneWidget);
+  });
+
+  testWidgets('requires pH and Brix before adding to issue note', (
+    tester,
+  ) async {
+    await pumpFieldCollectorApp(tester);
+
+    await tester.tap(find.text('Continue').first);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField).at(0), 'AR001');
+    await tester.enterText(find.byType(TextFormField).at(1), '12.5');
+    await tester.tap(find.text('Add'));
+    await tester.pump();
+
+    expect(find.text('Enter pH value'), findsOneWidget);
+    expect(find.text('Enter Brix'), findsOneWidget);
   });
 
   testWidgets('can submit then reopen an issue note', (tester) async {
@@ -89,7 +110,10 @@ void main() {
   });
 
   testWidgets('creates a transfer note locally', (tester) async {
-    await pumpFieldCollectorApp(tester, initialLocation: '/field-collection/transfers');
+    await pumpFieldCollectorApp(
+      tester,
+      initialLocation: '/field-collection/transfers',
+    );
 
     await tester.tap(find.text('New transfer'));
     await tester.pumpAndSettle();

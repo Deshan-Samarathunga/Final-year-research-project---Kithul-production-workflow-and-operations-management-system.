@@ -24,15 +24,29 @@ class KithulLogo extends StatelessWidget {
             color: kithulBlue,
             borderRadius: BorderRadius.circular(8),
           ),
-          child: const Icon(Icons.inventory_2_rounded, color: Colors.white, size: 20),
+          child: const Icon(
+            Icons.inventory_2_rounded,
+            color: Colors.white,
+            size: 20,
+          ),
         ),
         const SizedBox(width: 10),
         RichText(
           text: const TextSpan(
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: 0),
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0,
+            ),
             children: [
-              TextSpan(text: 'Kithul', style: TextStyle(color: kithulBlue)),
-              TextSpan(text: 'Flow', style: TextStyle(color: kithulOrange)),
+              TextSpan(
+                text: 'Kithul',
+                style: TextStyle(color: kithulBlue),
+              ),
+              TextSpan(
+                text: 'Flow',
+                style: TextStyle(color: kithulOrange),
+              ),
             ],
           ),
         ),
@@ -63,11 +77,18 @@ class KithulAppBar extends ConsumerWidget implements PreferredSizeWidget {
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+          ),
           if (subtitle != null)
             Text(
               subtitle!,
-              style: const TextStyle(color: kithulMuted, fontSize: 12, fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                color: kithulMuted,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
             ),
         ],
       ),
@@ -121,23 +142,26 @@ class SyncStatusPill extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final pending = ref.watch(pendingSyncCountProvider).maybeWhen(
-          data: (value) => value,
-          orElse: () => 0,
-        );
+    final pending = ref
+        .watch(pendingSyncCountProvider)
+        .maybeWhen(data: (value) => value, orElse: () => 0);
     final hasPending = pending > 0;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
         color: hasPending ? const Color(0xFFFFF7ED) : const Color(0xFFEFFDF5),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: hasPending ? const Color(0xFFFED7AA) : const Color(0xFFBBF7D0)),
+        border: Border.all(
+          color: hasPending ? const Color(0xFFFED7AA) : const Color(0xFFBBF7D0),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            hasPending ? Icons.cloud_upload_outlined : Icons.offline_pin_rounded,
+            hasPending
+                ? Icons.cloud_upload_outlined
+                : Icons.offline_pin_rounded,
             size: 16,
             color: hasPending ? const Color(0xFFC2410C) : kithulGreen,
           ),
@@ -180,13 +204,18 @@ class EmptyState extends StatelessWidget {
           children: [
             Icon(icon, color: kithulBlue, size: 42),
             const SizedBox(height: 14),
-            Text(title, style: Theme.of(context).textTheme.titleMedium, textAlign: TextAlign.center),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 8),
-            Text(message, style: const TextStyle(color: kithulMuted), textAlign: TextAlign.center),
-            if (action != null) ...[
-              const SizedBox(height: 18),
-              action!,
-            ],
+            Text(
+              message,
+              style: const TextStyle(color: kithulMuted),
+              textAlign: TextAlign.center,
+            ),
+            if (action != null) ...[const SizedBox(height: 18), action!],
           ],
         ),
       ),
@@ -217,7 +246,11 @@ class MetricChip extends StatelessWidget {
       ),
       child: Text(
         '$label: $value',
-        style: TextStyle(color: color, fontWeight: FontWeight.w800, fontSize: 12),
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.w800,
+          fontSize: 12,
+        ),
       ),
     );
   }
@@ -237,13 +270,25 @@ class StatusBadge extends StatelessWidget {
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(label, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w800)),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
     );
   }
 }
 
 class FormSheet extends StatelessWidget {
-  const FormSheet({super.key, required this.title, required this.subtitle, required this.child});
+  const FormSheet({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.child,
+  });
 
   final String title;
   final String subtitle;
@@ -266,7 +311,12 @@ class FormSheet extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Expanded(child: Text(title, style: Theme.of(context).textTheme.titleLarge)),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ),
                   IconButton(
                     tooltip: 'Close',
                     onPressed: () => Navigator.of(context).pop(),

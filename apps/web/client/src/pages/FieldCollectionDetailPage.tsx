@@ -18,7 +18,9 @@ export function IssueNoteDetailPage() {
   const columns: Column<IssueNoteItem>[] = [
     { header: "#", accessor: (row) => row.id },
     { header: "Can Code", accessor: (row) => row.canCode },
-    { header: "Quantity", align: "right", accessor: (row) => row.quantity }
+    { header: "Quantity", align: "right", accessor: (row) => row.quantity },
+    { header: "pH Value", align: "right", accessor: (row) => row.phValue },
+    { header: "Brix", align: "right", accessor: (row) => row.brixValue }
   ];
 
   return (

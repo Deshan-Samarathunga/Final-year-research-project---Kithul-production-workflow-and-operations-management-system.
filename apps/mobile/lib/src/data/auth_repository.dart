@@ -20,8 +20,8 @@ class MobileSession {
 
 class AuthRepository {
   AuthRepository(this.db, {FlutterSecureStorage? secureStorage, Dio? dio})
-      : _secureStorage = secureStorage ?? const FlutterSecureStorage(),
-        _dio = dio ?? Dio();
+    : _secureStorage = secureStorage ?? const FlutterSecureStorage(),
+      _dio = dio ?? Dio();
 
   final AppDatabase db;
   final FlutterSecureStorage _secureStorage;
@@ -40,11 +40,19 @@ class AuthRepository {
     final displayName = await _secureStorage.read(key: _displayNameKey);
     final serverUrl = await getServerUrl();
 
-    if (token == null || userId == null || displayName == null || serverUrl == null) {
+    if (token == null ||
+        userId == null ||
+        displayName == null ||
+        serverUrl == null) {
       return null;
     }
 
-    return MobileSession(token: token, serverUrl: serverUrl, userId: userId, displayName: displayName);
+    return MobileSession(
+      token: token,
+      serverUrl: serverUrl,
+      userId: userId,
+      displayName: displayName,
+    );
   }
 
   Future<MobileSession> login({
@@ -72,7 +80,12 @@ class AuthRepository {
     await _secureStorage.write(key: _userIdKey, value: userId.trim());
     await _secureStorage.write(key: _displayNameKey, value: displayName);
 
-    return MobileSession(token: token, serverUrl: normalizedUrl, userId: userId.trim(), displayName: displayName);
+    return MobileSession(
+      token: token,
+      serverUrl: normalizedUrl,
+      userId: userId.trim(),
+      displayName: displayName,
+    );
   }
 
   Future<void> logout() async {
@@ -81,7 +94,9 @@ class AuthRepository {
       try {
         await _dio.post<void>(
           '${session.serverUrl}/api/mobile/auth/logout',
-          options: Options(headers: {'Authorization': 'Bearer ${session.token}'}),
+          options: Options(
+            headers: {'Authorization': 'Bearer ${session.token}'},
+          ),
         );
       } catch (_) {
         // Logout must work offline; local credentials are cleared regardless.
@@ -95,15 +110,20 @@ class AuthRepository {
 
   Future<String?> getServerUrl() => getMetadata(serverUrlKey);
 
-  Future<void> setServerUrl(String serverUrl) => setMetadata(serverUrlKey, normalizeServerUrl(serverUrl));
+  Future<void> setServerUrl(String serverUrl) =>
+      setMetadata(serverUrlKey, normalizeServerUrl(serverUrl));
 
   Future<String?> getMetadata(String key) async {
-    final row = await (db.select(db.syncMetadata)..where((tbl) => tbl.key.equals(key))).getSingleOrNull();
+    final row = await (db.select(
+      db.syncMetadata,
+    )..where((tbl) => tbl.key.equals(key))).getSingleOrNull();
     return row?.value;
   }
 
   Future<void> setMetadata(String key, String value) async {
-    await db.into(db.syncMetadata).insertOnConflictUpdate(
+    await db
+        .into(db.syncMetadata)
+        .insertOnConflictUpdate(
           SyncMetadataCompanion.insert(
             key: key,
             value: value,

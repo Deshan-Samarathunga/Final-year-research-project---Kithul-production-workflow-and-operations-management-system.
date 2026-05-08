@@ -48,7 +48,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(22),
           child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: MediaQuery.of(context).size.height - 44),
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.of(context).size.height - 44,
+            ),
             child: Form(
               key: _formKey,
               child: Column(
@@ -56,7 +58,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 children: [
                   const KithulLogo(),
                   const SizedBox(height: 42),
-                  Text('Field collector login', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w900)),
+                  Text(
+                    'Field collector login',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
                   const SizedBox(height: 10),
                   const Text(
                     'Enter the PC server address and your Field Collection employee login. Offline work stays on this phone until sync succeeds.',
@@ -71,7 +78,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       hintText: 'http://192.168.1.5:4000',
                       prefixIcon: Icon(Icons.wifi_tethering_outlined),
                     ),
-                    validator: (value) => value == null || value.trim().isEmpty ? 'Enter the PC server URL' : null,
+                    validator: (value) => value == null || value.trim().isEmpty
+                        ? 'Enter the PC server URL'
+                        : null,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
@@ -81,7 +90,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       hintText: 'field01',
                       prefixIcon: Icon(Icons.person_outline),
                     ),
-                    validator: (value) => value == null || value.trim().isEmpty ? 'Enter user ID' : null,
+                    validator: (value) => value == null || value.trim().isEmpty
+                        ? 'Enter user ID'
+                        : null,
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
@@ -92,7 +103,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       hintText: 'password123',
                       prefixIcon: Icon(Icons.lock_outline),
                     ),
-                    validator: (value) => value == null || value.isEmpty ? 'Enter password' : null,
+                    validator: (value) => value == null || value.isEmpty
+                        ? 'Enter password'
+                        : null,
                   ),
                   const SizedBox(height: 18),
                   Row(
@@ -109,7 +122,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         child: FilledButton.icon(
                           onPressed: _loading ? null : _login,
                           icon: _loading
-                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
                               : const Icon(Icons.login),
                           label: const Text('Login'),
                         ),
@@ -122,13 +141,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: _message!.startsWith('Connected') ? const Color(0xFFEFFDF5) : const Color(0xFFFEF2F2),
+                        color: _message!.startsWith('Connected')
+                            ? const Color(0xFFEFFDF5)
+                            : const Color(0xFFFEF2F2),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         _message!,
                         style: TextStyle(
-                          color: _message!.startsWith('Connected') ? kithulGreen : Colors.red.shade700,
+                          color: _message!.startsWith('Connected')
+                              ? kithulGreen
+                              : Colors.red.shade700,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -137,7 +160,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const _RoleInfoCard(
                     icon: Icons.assignment_turned_in_outlined,
                     title: 'Field Collector',
-                    subtitle: 'Issue notes, can quantities, transfer notes, and offline sync',
+                    subtitle:
+                        'Issue notes, can quantities, transfer notes, and offline sync',
                   ),
                   const SizedBox(height: 12),
                   const _RoleInfoCard(
@@ -149,7 +173,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(height: 24),
                   const SyncStatusPill(),
                   const SizedBox(height: 12),
-                  const Text('KithulFlow Mobile v1.0.0', style: TextStyle(color: kithulMuted, fontSize: 12)),
+                  const Text(
+                    'KithulFlow Mobile v1.0.0',
+                    style: TextStyle(color: kithulMuted, fontSize: 12),
+                  ),
                 ],
               ),
             ),
@@ -170,7 +197,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _message = null;
     });
     try {
-      final result = await ref.read(mobileSyncServiceProvider).testConnection(_serverController.text);
+      final result = await ref
+          .read(mobileSyncServiceProvider)
+          .testConnection(_serverController.text);
       if (mounted) {
         setState(() {
           _loading = false;
@@ -196,7 +225,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     try {
-      await ref.read(authRepositoryProvider).login(
+      await ref
+          .read(authRepositoryProvider)
+          .login(
             serverUrl: _serverController.text,
             userId: _userController.text,
             password: _passwordController.text,
@@ -206,7 +237,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (mounted) context.go('/field-collection');
     } on DioException catch (error) {
       final data = error.response?.data;
-      final message = data is Map && data['message'] != null ? '${data['message']}' : 'Could not connect or login.';
+      final message = data is Map && data['message'] != null
+          ? '${data['message']}'
+          : 'Could not connect or login.';
       if (mounted) {
         setState(() {
           _loading = false;
@@ -248,7 +281,9 @@ class _RoleInfoCard extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: (disabled ? Colors.grey : kithulBlue).withValues(alpha: 0.12),
+                color: (disabled ? Colors.grey : kithulBlue).withValues(
+                  alpha: 0.12,
+                ),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(icon, color: disabled ? Colors.grey : kithulBlue),
@@ -264,7 +299,10 @@ class _RoleInfoCard extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(disabled ? Icons.lock_outline : Icons.verified_user_outlined, color: disabled ? Colors.grey : kithulBlue),
+            Icon(
+              disabled ? Icons.lock_outline : Icons.verified_user_outlined,
+              color: disabled ? Colors.grey : kithulBlue,
+            ),
           ],
         ),
       ),

@@ -35,6 +35,8 @@ const mobileIssueNoteItemSchema = z.object({
   issueNoteLocalId: z.string().min(1),
   canCode: z.string().trim().min(1),
   quantity: z.number().positive(),
+  phValue: z.number().min(0).max(14).default(0),
+  brixValue: z.number().min(0).default(0),
   updatedAt: z.coerce.date(),
   deletedAt: z.coerce.date().optional().nullable()
 });
@@ -175,6 +177,8 @@ router.post(
             issueNoteId: parent.id,
             canCode: item.canCode.toUpperCase(),
             quantity: item.quantity,
+            phValue: item.phValue,
+            brixValue: item.brixValue,
             deletedAt: item.deletedAt ?? null
           },
           create: {
@@ -182,6 +186,8 @@ router.post(
             issueNoteId: parent.id,
             canCode: item.canCode.toUpperCase(),
             quantity: item.quantity,
+            phValue: item.phValue,
+            brixValue: item.brixValue,
             deletedAt: item.deletedAt ?? null
           }
         });

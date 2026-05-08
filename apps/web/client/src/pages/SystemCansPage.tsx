@@ -1,6 +1,7 @@
 import { FormEvent, useCallback, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Clock3, Plus, Trash2, X } from "lucide-react";
+import { Clock3, Download, Plus, Printer, QrCode, Trash2, X } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { systemCansApi, type FacetOption, type SystemCan, type SystemCanFilters } from "../api/client";
 import { queryKeys } from "../api/queryKeys";
 import { Badge, type BadgeTone } from "../components/Badge";
@@ -24,6 +25,93 @@ function statusTone(status: string): BadgeTone {
   if (status === "Lost") return "red";
   if (status === "Retired") return "slate";
   return "yellow";
+}
+
+function downloadQrSvg(can: SystemCan) {
+  const svg = document.getElementById(`can-qr-${can.id}`);
+  if (!(svg instanceof SVGElement)) return;
+
+  const source = new XMLSerializer().serializeToString(svg);
+  const blob = new Blob([source], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${can.canCode}-qr.svg`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function PrintStyles() {
+  return (
+    <style>
+      {`@media print {
+        body * { visibility: hidden !important; }
+        .qr-print-area, .qr-print-area * { visibility: visible !important; }
+        .qr-print-area { position: absolute; inset: 0; padding: 16px; background: white; }
+        .qr-no-print { display: none !important; }
+      }`}
+    </style>
+  );
+}
+
+function CanQrLabel({ can, large = false }: { can: SystemCan; large?: boolean }) {
+  return (
+    <div className="flex flex-col items-center rounded-md border border-slate-300 bg-white p-4 text-center">
+      <div className="mb-2 text-sm font-black">
+        <span className="text-blue-600">Kithul</span>
+        <span className="text-orange-500">Flow</span>
+      </div>
+      <QRCodeSVG
+        id={large ? `can-qr-${can.id}` : undefined}
+        value={can.canCode}
+        size={large ? 220 : 132}
+        level="M"
+        includeMargin
+      />
+      <div className="mt-2 text-xl font-black tracking-wide text-slate-950">{can.canCode}</div>
+      <div className="text-xs font-semibold text-slate-500">System Can</div>
+    </div>
+  );
+}
+
+function QrDialog({ cans, onClose }: { cans: SystemCan[]; onClose: () => void }) {
+  const single = cans.length === 1 ? cans[0] : null;
+
+  return (
+    <Modal
+      title={single ? `${single.canCode} QR code` : `QR labels (${cans.length})`}
+      description="Scan this code from the mobile field collector app to select the can automatically."
+      onClose={onClose}
+      width={single ? "max-w-md" : "max-w-4xl"}
+      footer={
+        <div className="qr-no-print flex gap-2">
+          <Button type="button" onClick={() => window.print()} icon={<Printer className="h-4 w-4" />}>
+            Print
+          </Button>
+          {single ? (
+            <Button type="button" variant="primary" onClick={() => downloadQrSvg(single)} icon={<Download className="h-4 w-4" />}>
+              Download SVG
+            </Button>
+          ) : null}
+        </div>
+      }
+    >
+      <PrintStyles />
+      <div className="qr-print-area">
+        {single ? (
+          <CanQrLabel can={single} large />
+        ) : (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {cans.map((can) => (
+              <CanQrLabel key={can.id} can={can} />
+            ))}
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
 }
 
 function AddCanDialog({ onClose }: { onClose: () => void }) {
@@ -169,6 +257,8 @@ export function SystemCansPage() {
   const [filters, setFilters] = useState<SystemCanFilters>({});
   const [addOpen, setAddOpen] = useState(false);
   const [historyCan, setHistoryCan] = useState<SystemCan | null>(null);
+  const [qrCans, setQrCans] = useState<SystemCan[] | null>(null);
+  const [selectedCanIds, setSelectedCanIds] = useState<Set<number>>(() => new Set());
   const queryClient = useQueryClient();
   const filterKey = JSON.stringify(filters);
   const { data, isLoading } = useQuery({
@@ -189,14 +279,56 @@ export function SystemCansPage() {
     setFilters((current) => ({ ...current, updatedFrom: value.from, updatedTo: value.to }));
     setPage(1);
   }, []);
+  const pageRows = data?.data ?? [];
+  const selectedPageCans = pageRows.filter((can) => selectedCanIds.has(can.id));
+  const allPageSelected = pageRows.length > 0 && selectedPageCans.length === pageRows.length;
+
+  const togglePageSelection = useCallback(
+    (checked: boolean) => {
+      setSelectedCanIds((current) => {
+        const next = new Set(current);
+        for (const can of pageRows) {
+          if (checked) next.add(can.id);
+          else next.delete(can.id);
+        }
+        return next;
+      });
+    },
+    [pageRows]
+  );
+
+  const toggleCanSelection = useCallback((id: number, checked: boolean) => {
+    setSelectedCanIds((current) => {
+      const next = new Set(current);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }, []);
 
   const columns = useMemo<Column<SystemCan>[]>(
     () => [
       {
         header: "",
-        filter: "none",
+        filterControl: (
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded border-slate-300"
+            aria-label="Select all cans on page"
+            checked={allPageSelected}
+            onChange={(event) => togglePageSelection(event.target.checked)}
+          />
+        ),
         className: "w-12",
-        accessor: () => <input type="checkbox" className="h-4 w-4 rounded border-slate-300" aria-label="Select can" />
+        accessor: (row) => (
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded border-slate-300"
+            aria-label={`Select ${row.canCode}`}
+            checked={selectedCanIds.has(row.id)}
+            onChange={(event) => toggleCanSelection(row.id, event.target.checked)}
+          />
+        )
       },
       {
         header: "Can",
@@ -269,6 +401,9 @@ export function SystemCansPage() {
         align: "right",
         accessor: (row) => (
           <div className="flex justify-end gap-2">
+            <Button type="button" className="h-8" onClick={() => setQrCans([row])} icon={<QrCode className="h-4 w-4" />}>
+              QR
+            </Button>
             <Button type="button" className="h-8" onClick={() => setHistoryCan(row)} icon={<Clock3 className="h-4 w-4" />}>
               History
             </Button>
@@ -287,7 +422,19 @@ export function SystemCansPage() {
         )
       }
     ],
-    [data?.facets.agents, data?.facets.statuses, data?.total, filters, remove, updateDateRange, updateFilter]
+    [
+      allPageSelected,
+      data?.facets.agents,
+      data?.facets.statuses,
+      data?.total,
+      filters,
+      remove,
+      selectedCanIds,
+      toggleCanSelection,
+      togglePageSelection,
+      updateDateRange,
+      updateFilter
+    ]
   );
 
   return (
@@ -304,9 +451,19 @@ export function SystemCansPage() {
               }}
               placeholder="Search cans"
             />
-            <Button type="button" variant="primary" onClick={() => setAddOpen(true)} icon={<Plus className="h-4 w-4" />}>
-              Add can
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                disabled={selectedPageCans.length === 0}
+                onClick={() => setQrCans(selectedPageCans)}
+                icon={<QrCode className="h-4 w-4" />}
+              >
+                Generate QR labels
+              </Button>
+              <Button type="button" variant="primary" onClick={() => setAddOpen(true)} icon={<Plus className="h-4 w-4" />}>
+                Add can
+              </Button>
+            </div>
           </>
         }
       >
@@ -330,6 +487,7 @@ export function SystemCansPage() {
       </PagePanel>
       {addOpen ? <AddCanDialog onClose={() => setAddOpen(false)} /> : null}
       {historyCan ? <HistoryDialog can={historyCan} onClose={() => setHistoryCan(null)} /> : null}
+      {qrCans ? <QrDialog cans={qrCans} onClose={() => setQrCans(null)} /> : null}
     </>
   );
 }
