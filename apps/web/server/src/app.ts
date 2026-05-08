@@ -9,6 +9,7 @@ import { centersRouter } from "./routes/centers.js";
 import { dashboardRouter } from "./routes/dashboard.js";
 import { employeesRouter } from "./routes/employees.js";
 import { fieldCollectionRouter } from "./routes/fieldCollection.js";
+import { mobileRouter } from "./routes/mobile.js";
 import { systemCansRouter } from "./routes/systemCans.js";
 import { errorHandler } from "./utils/http.js";
 
@@ -34,6 +35,7 @@ export function createApp() {
   });
 
   app.use("/api/auth", authRouter);
+  app.use("/api/mobile", mobileRouter);
   app.use("/api/dashboard", requireAdmin, dashboardRouter);
   app.use("/api/employees", requireAdmin, employeesRouter);
   app.use("/api/centers", requireAdmin, centersRouter);

@@ -12,6 +12,12 @@ declare global {
         displayName: string;
         email: string;
       };
+      mobileEmployee?: {
+        id: number;
+        userId: string;
+        displayName: string;
+        role: string;
+      };
     }
   }
 }
@@ -41,5 +47,37 @@ export async function requireAdmin(request: Request, _response: Response, next: 
     next();
   } catch (error) {
     next(error instanceof AppError ? error : new AppError(401, "Authentication required"));
+  }
+}
+
+export async function requireMobileEmployee(request: Request, _response: Response, next: NextFunction) {
+  try {
+    const bearer = request.header("authorization")?.replace(/^Bearer\s+/i, "");
+
+    if (!bearer) {
+      throw new AppError(401, "Mobile authentication required");
+    }
+
+    const payload = verifyAuthToken(bearer);
+    const employee = await prisma.employee.findUnique({ where: { id: payload.sub } });
+
+    if (
+      !employee ||
+      employee.status !== "Active" ||
+      employee.role !== "Field Collection" ||
+      payload.kind !== "employee"
+    ) {
+      throw new AppError(401, "Mobile authentication required");
+    }
+
+    request.mobileEmployee = {
+      id: employee.id,
+      userId: employee.userId,
+      displayName: employee.fullName,
+      role: employee.role
+    };
+    next();
+  } catch (error) {
+    next(error instanceof AppError ? error : new AppError(401, "Mobile authentication required"));
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -191,7 +193,10 @@ class _IssueNoteCard extends ConsumerWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: FilledButton.icon(
-                      onPressed: () => ref.read(fieldRepositoryProvider).reopenIssueNote(note.localId),
+                      onPressed: () async {
+                        await ref.read(fieldRepositoryProvider).reopenIssueNote(note.localId);
+                        unawaited(ref.read(mobileSyncServiceProvider).syncNow());
+                      },
                       icon: const Icon(Icons.restart_alt),
                       label: const Text('Reopen'),
                     ),
@@ -213,7 +218,10 @@ class _IssueNoteCard extends ConsumerWidget {
                       const SizedBox(width: 10),
                       Expanded(
                         child: FilledButton.icon(
-                          onPressed: () => ref.read(fieldRepositoryProvider).submitIssueNote(note.localId),
+                          onPressed: () async {
+                            await ref.read(fieldRepositoryProvider).submitIssueNote(note.localId);
+                            unawaited(ref.read(mobileSyncServiceProvider).syncNow());
+                          },
                           icon: const Icon(Icons.check_circle_outline),
                           label: const Text('Submit'),
                         ),
@@ -225,7 +233,10 @@ class _IssueNoteCard extends ConsumerWidget {
                     width: double.infinity,
                     child: FilledButton.icon(
                       style: FilledButton.styleFrom(backgroundColor: Colors.red.shade600),
-                      onPressed: () => ref.read(fieldRepositoryProvider).deleteIssueNote(note.localId),
+                      onPressed: () async {
+                        await ref.read(fieldRepositoryProvider).deleteIssueNote(note.localId);
+                        unawaited(ref.read(mobileSyncServiceProvider).syncNow());
+                      },
                       icon: const Icon(Icons.delete_outline),
                       label: const Text('Delete'),
                     ),
@@ -337,6 +348,7 @@ class _CreateIssueNoteFormState extends ConsumerState<_CreateIssueNoteForm> {
                     centerLocalId: _centerLocalId!,
                     type: _type,
                   );
+              unawaited(ref.read(mobileSyncServiceProvider).syncNow());
               if (context.mounted) Navigator.of(context).pop();
             },
             icon: const Icon(Icons.add),

@@ -94,19 +94,67 @@ export type SystemCanWithHistory = SystemCan & {
 
 export type IssueNote = {
   id: number;
+  mobileLocalId: string | null;
   issueNoteName: string;
   collectionDate: string;
   centerId: number | null;
   center: Center | null;
+  submittedByEmployeeId: number | null;
   type: string;
   status: "Active" | "Completed";
   canCount: number;
   totalQty: number;
+  items?: IssueNoteItem[];
+  deletedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type IssueNoteItem = {
+  id: number;
+  mobileLocalId: string | null;
+  issueNoteId: number;
+  canCode: string;
+  quantity: number;
+  deletedAt: string | null;
   createdAt: string;
   updatedAt: string;
 };
 
 export type IssueNoteResponse = PaginatedResponse<IssueNote> & {
+  counts: {
+    active: number;
+    completed: number;
+  };
+};
+
+export type TransferNoteItem = {
+  id: number;
+  mobileLocalId: string | null;
+  transferNoteId: number;
+  canCode: string;
+  deletedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type TransferNote = {
+  id: number;
+  mobileLocalId: string | null;
+  transferNoteNo: string;
+  transferDate: string;
+  centerId: number | null;
+  center: Center | null;
+  submittedByEmployeeId: number | null;
+  status: "Active" | "Completed";
+  canCount: number;
+  items?: TransferNoteItem[];
+  deletedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type TransferNoteResponse = PaginatedResponse<TransferNote> & {
   counts: {
     active: number;
     completed: number;
@@ -272,6 +320,17 @@ export const fieldCollectionApi = {
   },
   create: (payload: { issueNoteName: string; collectionDate: string; centerId: number; type: string }) =>
     api<IssueNote>("/api/field-collection/issue-notes", { method: "POST", json: payload }),
+  detail: (id: number) => api<IssueNote>(`/api/field-collection/issue-notes/${id}`),
   update: (id: number, payload: Partial<IssueNote>) =>
-    api<IssueNote>(`/api/field-collection/issue-notes/${id}`, { method: "PATCH", json: payload })
+    api<IssueNote>(`/api/field-collection/issue-notes/${id}`, { method: "PATCH", json: payload }),
+  transfers: (params: { status: "Active" | "Completed"; page: number; pageSize: number; search?: string }) => {
+    const query = new URLSearchParams({
+      status: params.status,
+      page: String(params.page),
+      pageSize: String(params.pageSize),
+      ...(params.search ? { search: params.search } : {})
+    });
+    return api<TransferNoteResponse>(`/api/field-collection/transfer-notes?${query}`);
+  },
+  transferDetail: (id: number) => api<TransferNote>(`/api/field-collection/transfer-notes/${id}`)
 };

@@ -5,14 +5,13 @@ import { asyncHandler, pagination } from "../utils/http.js";
 
 const router = Router();
 
-const issueNoteTypes = ["Field collection", "Direct collection", "Transfer return"] as const;
 const issueNoteStatuses = ["Active", "Completed"] as const;
 
 const issueNoteSchema = z.object({
   issueNoteName: z.string().trim().min(2).max(120),
   collectionDate: z.coerce.date(),
   centerId: z.number().int().positive(),
-  type: z.enum(issueNoteTypes)
+  type: z.string().trim().min(2).max(80)
 });
 
 const updateIssueNoteSchema = z
@@ -20,7 +19,7 @@ const updateIssueNoteSchema = z
     issueNoteName: z.string().trim().min(2).max(120).optional(),
     collectionDate: z.coerce.date().optional(),
     centerId: z.number().int().positive().optional(),
-    type: z.enum(issueNoteTypes).optional(),
+    type: z.string().trim().min(2).max(80).optional(),
     status: z.enum(issueNoteStatuses).optional(),
     canCount: z.number().int().min(0).optional(),
     totalQty: z.number().min(0).optional()
@@ -35,6 +34,7 @@ router.get(
     const search = String(request.query.search ?? "").trim();
     const where = {
       status,
+      deletedAt: null,
       ...(search
         ? {
             OR: [
@@ -50,14 +50,14 @@ router.get(
     const [data, total, active, completed] = await Promise.all([
       prisma.issueNote.findMany({
         where,
-        include: { center: true },
+        include: { center: true, items: { where: { deletedAt: null }, orderBy: { createdAt: "asc" } } },
         orderBy: { collectionDate: "desc" },
         skip,
         take
       }),
       prisma.issueNote.count({ where }),
-      prisma.issueNote.count({ where: { status: "Active" } }),
-      prisma.issueNote.count({ where: { status: "Completed" } })
+      prisma.issueNote.count({ where: { status: "Active", deletedAt: null } }),
+      prisma.issueNote.count({ where: { status: "Completed", deletedAt: null } })
     ]);
 
     response.json({
@@ -82,10 +82,27 @@ router.post(
         canCount: 0,
         totalQty: 0
       },
-      include: { center: true }
+      include: { center: true, items: { where: { deletedAt: null }, orderBy: { createdAt: "asc" } } }
     });
 
     response.status(201).json(issueNote);
+  })
+);
+
+router.get(
+  "/issue-notes/:id",
+  asyncHandler(async (request, response) => {
+    const issueNote = await prisma.issueNote.findFirst({
+      where: { id: Number(request.params.id), deletedAt: null },
+      include: { center: true, items: { where: { deletedAt: null }, orderBy: { createdAt: "asc" } } }
+    });
+
+    if (!issueNote) {
+      response.status(404).json({ message: "Issue note not found" });
+      return;
+    }
+
+    response.json(issueNote);
   })
 );
 
@@ -96,10 +113,71 @@ router.patch(
     const issueNote = await prisma.issueNote.update({
       where: { id: Number(request.params.id) },
       data: payload,
-      include: { center: true }
+      include: { center: true, items: { where: { deletedAt: null }, orderBy: { createdAt: "asc" } } }
     });
 
     response.json(issueNote);
+  })
+);
+
+router.get(
+  "/transfer-notes",
+  asyncHandler(async (request, response) => {
+    const { page, pageSize, skip, take } = pagination(request.query);
+    const status = String(request.query.status ?? "Active");
+    const search = String(request.query.search ?? "").trim();
+    const where = {
+      status,
+      deletedAt: null,
+      ...(search
+        ? {
+            OR: [
+              { transferNoteNo: { contains: search, mode: "insensitive" as const } },
+              { center: { agent: { contains: search, mode: "insensitive" as const } } },
+              { center: { centerId: { contains: search, mode: "insensitive" as const } } }
+            ]
+          }
+        : {})
+    };
+
+    const [data, total, active, completed] = await Promise.all([
+      prisma.transferNote.findMany({
+        where,
+        include: { center: true, items: { where: { deletedAt: null }, orderBy: { createdAt: "asc" } } },
+        orderBy: { transferDate: "desc" },
+        skip,
+        take
+      }),
+      prisma.transferNote.count({ where }),
+      prisma.transferNote.count({ where: { status: "Active", deletedAt: null } }),
+      prisma.transferNote.count({ where: { status: "Completed", deletedAt: null } })
+    ]);
+
+    response.json({
+      data,
+      counts: { active, completed },
+      page,
+      pageSize,
+      total,
+      pageCount: Math.max(Math.ceil(total / pageSize), 1)
+    });
+  })
+);
+
+router.get(
+  "/transfer-notes/:id",
+  asyncHandler(async (request, response) => {
+    const transferNote = await prisma.transferNote.findFirst({
+      where: { id: Number(request.params.id), deletedAt: null },
+      include: { center: true, items: { where: { deletedAt: null }, orderBy: { createdAt: "asc" } } }
+    });
+
+    if (!transferNote) {
+      response.status(404).json({ message: "Transfer note not found" });
+      return;
+    }
+
+    response.json(transferNote);
   })
 );
 

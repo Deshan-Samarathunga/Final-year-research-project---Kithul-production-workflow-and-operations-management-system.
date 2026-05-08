@@ -42,6 +42,7 @@ The backend and Prisma expect this connection string in `apps\web\server\.env`:
 
 ```env
 DATABASE_URL="postgresql://kithulflow:kithulflow@localhost:5432/kithulflow?schema=public"
+HOST="0.0.0.0"
 ```
 
 Open `http://localhost:5173`.
@@ -50,6 +51,33 @@ Seeded admin login:
 
 - User ID: `admin`
 - Password: `Admin@12345`
+
+Seeded mobile Field Collector login:
+
+- User ID: `field01`
+- Password: `password123`
+
+## Local WiFi Mobile Sync
+
+The API listens on `0.0.0.0` so a phone on the same WiFi can reach it. Find the PC IPv4 address:
+
+```powershell
+ipconfig
+```
+
+On the phone login screen, use:
+
+```text
+http://<PC IPv4>:4000
+```
+
+Example:
+
+```text
+http://192.168.1.5:4000
+```
+
+If Windows Firewall asks for permission when the server starts, allow access on the private network.
 
 ## Useful Scripts
 

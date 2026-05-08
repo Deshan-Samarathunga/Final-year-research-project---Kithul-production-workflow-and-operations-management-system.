@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kithulflow_mobile/src/app.dart';
 import 'package:kithulflow_mobile/src/data/app_database.dart';
+import 'package:kithulflow_mobile/src/data/auth_repository.dart';
 import 'package:kithulflow_mobile/src/data/providers.dart';
 
 Future<AppDatabase> pumpFieldCollectorApp(
@@ -15,7 +16,15 @@ Future<AppDatabase> pumpFieldCollectorApp(
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [databaseProvider.overrideWithValue(database)],
+      overrides: [
+        databaseProvider.overrideWithValue(database),
+        sessionProvider.overrideWith((ref) async => const MobileSession(
+              token: 'test-token',
+              serverUrl: 'http://127.0.0.1:4000',
+              userId: 'field01',
+              displayName: 'Field Collector',
+            )),
+      ],
       child: KithulFlowMobileApp(initialLocation: initialLocation),
     ),
   );

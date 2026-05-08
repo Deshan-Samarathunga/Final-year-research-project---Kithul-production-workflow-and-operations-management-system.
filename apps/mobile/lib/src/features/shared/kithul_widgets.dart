@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme.dart';
@@ -74,6 +75,33 @@ class KithulAppBar extends ConsumerWidget implements PreferredSizeWidget {
         const Padding(
           padding: EdgeInsets.only(right: 8),
           child: SyncStatusPill(),
+        ),
+        IconButton(
+          tooltip: 'Sync status',
+          onPressed: () => context.push('/sync'),
+          icon: const Icon(Icons.sync),
+        ),
+        PopupMenuButton<String>(
+          tooltip: 'Account',
+          onSelected: (value) async {
+            if (value == 'logout') {
+              await ref.read(authRepositoryProvider).logout();
+              ref.invalidate(sessionProvider);
+              if (context.mounted) context.go('/login');
+            }
+          },
+          itemBuilder: (context) => const [
+            PopupMenuItem(
+              value: 'logout',
+              child: Row(
+                children: [
+                  Icon(Icons.logout, size: 18),
+                  SizedBox(width: 10),
+                  Text('Logout'),
+                ],
+              ),
+            ),
+          ],
         ),
         ...?actions,
       ],

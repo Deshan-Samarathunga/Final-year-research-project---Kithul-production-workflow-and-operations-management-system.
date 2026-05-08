@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -159,7 +161,10 @@ class _TransferCard extends ConsumerWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: FilledButton.icon(
-                      onPressed: () => ref.read(fieldRepositoryProvider).completeTransferNote(note.localId),
+                      onPressed: () async {
+                        await ref.read(fieldRepositoryProvider).completeTransferNote(note.localId);
+                        unawaited(ref.read(mobileSyncServiceProvider).syncNow());
+                      },
                       icon: const Icon(Icons.check_circle_outline),
                       label: const Text('Complete'),
                     ),
@@ -260,6 +265,7 @@ class _CreateTransferNoteFormState extends ConsumerState<_CreateTransferNoteForm
                     transferDate: _transferDate,
                     centerLocalId: _centerLocalId!,
                   );
+              unawaited(ref.read(mobileSyncServiceProvider).syncNow());
               if (context.mounted) {
                 Navigator.of(context).pop();
                 context.push('/field-collection/transfers/$localId');

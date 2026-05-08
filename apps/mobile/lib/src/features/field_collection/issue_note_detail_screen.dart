@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -92,6 +94,7 @@ class _IssueNoteDetailScreenState extends ConsumerState<IssueNoteDetailScreen> {
                   canEdit: canEdit,
                   onDelete: (itemLocalId) async {
                     await ref.read(fieldRepositoryProvider).deleteIssueCan(itemLocalId, widget.noteLocalId);
+                    unawaited(ref.read(mobileSyncServiceProvider).syncNow());
                     setState(_reload);
                   },
                 ),
@@ -101,6 +104,7 @@ class _IssueNoteDetailScreenState extends ConsumerState<IssueNoteDetailScreen> {
                 FilledButton.icon(
                   onPressed: () async {
                     await ref.read(fieldRepositoryProvider).submitIssueNote(widget.noteLocalId);
+                    unawaited(ref.read(mobileSyncServiceProvider).syncNow());
                     setState(_reload);
                   },
                   icon: const Icon(Icons.check_circle_outline),
@@ -110,6 +114,7 @@ class _IssueNoteDetailScreenState extends ConsumerState<IssueNoteDetailScreen> {
                 FilledButton.icon(
                   onPressed: () async {
                     await ref.read(fieldRepositoryProvider).reopenIssueNote(widget.noteLocalId);
+                    unawaited(ref.read(mobileSyncServiceProvider).syncNow());
                     setState(_reload);
                   },
                   icon: const Icon(Icons.restart_alt),
@@ -131,6 +136,7 @@ class _IssueNoteDetailScreenState extends ConsumerState<IssueNoteDetailScreen> {
         );
     _canController.clear();
     _quantityController.clear();
+    unawaited(ref.read(mobileSyncServiceProvider).syncNow());
     setState(_reload);
   }
 

@@ -2168,6 +2168,17 @@ class $IssueNoteItemsTable extends IssueNoteItems
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
   );
+  static const VerificationMeta _remoteIdMeta = const VerificationMeta(
+    'remoteId',
+  );
+  @override
+  late final GeneratedColumn<String> remoteId = GeneratedColumn<String>(
+    'remote_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _issueNoteLocalIdMeta = const VerificationMeta(
     'issueNoteLocalId',
   );
@@ -2252,6 +2263,7 @@ class $IssueNoteItemsTable extends IssueNoteItems
   List<GeneratedColumn> get $columns => [
     id,
     localId,
+    remoteId,
     issueNoteLocalId,
     canCode,
     quantity,
@@ -2282,6 +2294,12 @@ class $IssueNoteItemsTable extends IssueNoteItems
       );
     } else if (isInserting) {
       context.missing(_localIdMeta);
+    }
+    if (data.containsKey('remote_id')) {
+      context.handle(
+        _remoteIdMeta,
+        remoteId.isAcceptableOrUnknown(data['remote_id']!, _remoteIdMeta),
+      );
     }
     if (data.containsKey('issue_note_local_id')) {
       context.handle(
@@ -2351,6 +2369,10 @@ class $IssueNoteItemsTable extends IssueNoteItems
         DriftSqlType.string,
         data['${effectivePrefix}local_id'],
       )!,
+      remoteId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}remote_id'],
+      ),
       issueNoteLocalId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}issue_note_local_id'],
@@ -2392,6 +2414,7 @@ class IssueNoteItemRecord extends DataClass
     implements Insertable<IssueNoteItemRecord> {
   final int id;
   final String localId;
+  final String? remoteId;
   final String issueNoteLocalId;
   final String canCode;
   final double quantity;
@@ -2402,6 +2425,7 @@ class IssueNoteItemRecord extends DataClass
   const IssueNoteItemRecord({
     required this.id,
     required this.localId,
+    this.remoteId,
     required this.issueNoteLocalId,
     required this.canCode,
     required this.quantity,
@@ -2415,6 +2439,9 @@ class IssueNoteItemRecord extends DataClass
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['local_id'] = Variable<String>(localId);
+    if (!nullToAbsent || remoteId != null) {
+      map['remote_id'] = Variable<String>(remoteId);
+    }
     map['issue_note_local_id'] = Variable<String>(issueNoteLocalId);
     map['can_code'] = Variable<String>(canCode);
     map['quantity'] = Variable<double>(quantity);
@@ -2431,6 +2458,9 @@ class IssueNoteItemRecord extends DataClass
     return IssueNoteItemsCompanion(
       id: Value(id),
       localId: Value(localId),
+      remoteId: remoteId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(remoteId),
       issueNoteLocalId: Value(issueNoteLocalId),
       canCode: Value(canCode),
       quantity: Value(quantity),
@@ -2451,6 +2481,7 @@ class IssueNoteItemRecord extends DataClass
     return IssueNoteItemRecord(
       id: serializer.fromJson<int>(json['id']),
       localId: serializer.fromJson<String>(json['localId']),
+      remoteId: serializer.fromJson<String?>(json['remoteId']),
       issueNoteLocalId: serializer.fromJson<String>(json['issueNoteLocalId']),
       canCode: serializer.fromJson<String>(json['canCode']),
       quantity: serializer.fromJson<double>(json['quantity']),
@@ -2466,6 +2497,7 @@ class IssueNoteItemRecord extends DataClass
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'localId': serializer.toJson<String>(localId),
+      'remoteId': serializer.toJson<String?>(remoteId),
       'issueNoteLocalId': serializer.toJson<String>(issueNoteLocalId),
       'canCode': serializer.toJson<String>(canCode),
       'quantity': serializer.toJson<double>(quantity),
@@ -2479,6 +2511,7 @@ class IssueNoteItemRecord extends DataClass
   IssueNoteItemRecord copyWith({
     int? id,
     String? localId,
+    Value<String?> remoteId = const Value.absent(),
     String? issueNoteLocalId,
     String? canCode,
     double? quantity,
@@ -2489,6 +2522,7 @@ class IssueNoteItemRecord extends DataClass
   }) => IssueNoteItemRecord(
     id: id ?? this.id,
     localId: localId ?? this.localId,
+    remoteId: remoteId.present ? remoteId.value : this.remoteId,
     issueNoteLocalId: issueNoteLocalId ?? this.issueNoteLocalId,
     canCode: canCode ?? this.canCode,
     quantity: quantity ?? this.quantity,
@@ -2501,6 +2535,7 @@ class IssueNoteItemRecord extends DataClass
     return IssueNoteItemRecord(
       id: data.id.present ? data.id.value : this.id,
       localId: data.localId.present ? data.localId.value : this.localId,
+      remoteId: data.remoteId.present ? data.remoteId.value : this.remoteId,
       issueNoteLocalId: data.issueNoteLocalId.present
           ? data.issueNoteLocalId.value
           : this.issueNoteLocalId,
@@ -2520,6 +2555,7 @@ class IssueNoteItemRecord extends DataClass
     return (StringBuffer('IssueNoteItemRecord(')
           ..write('id: $id, ')
           ..write('localId: $localId, ')
+          ..write('remoteId: $remoteId, ')
           ..write('issueNoteLocalId: $issueNoteLocalId, ')
           ..write('canCode: $canCode, ')
           ..write('quantity: $quantity, ')
@@ -2535,6 +2571,7 @@ class IssueNoteItemRecord extends DataClass
   int get hashCode => Object.hash(
     id,
     localId,
+    remoteId,
     issueNoteLocalId,
     canCode,
     quantity,
@@ -2549,6 +2586,7 @@ class IssueNoteItemRecord extends DataClass
       (other is IssueNoteItemRecord &&
           other.id == this.id &&
           other.localId == this.localId &&
+          other.remoteId == this.remoteId &&
           other.issueNoteLocalId == this.issueNoteLocalId &&
           other.canCode == this.canCode &&
           other.quantity == this.quantity &&
@@ -2561,6 +2599,7 @@ class IssueNoteItemRecord extends DataClass
 class IssueNoteItemsCompanion extends UpdateCompanion<IssueNoteItemRecord> {
   final Value<int> id;
   final Value<String> localId;
+  final Value<String?> remoteId;
   final Value<String> issueNoteLocalId;
   final Value<String> canCode;
   final Value<double> quantity;
@@ -2571,6 +2610,7 @@ class IssueNoteItemsCompanion extends UpdateCompanion<IssueNoteItemRecord> {
   const IssueNoteItemsCompanion({
     this.id = const Value.absent(),
     this.localId = const Value.absent(),
+    this.remoteId = const Value.absent(),
     this.issueNoteLocalId = const Value.absent(),
     this.canCode = const Value.absent(),
     this.quantity = const Value.absent(),
@@ -2582,6 +2622,7 @@ class IssueNoteItemsCompanion extends UpdateCompanion<IssueNoteItemRecord> {
   IssueNoteItemsCompanion.insert({
     this.id = const Value.absent(),
     required String localId,
+    this.remoteId = const Value.absent(),
     required String issueNoteLocalId,
     required String canCode,
     required double quantity,
@@ -2596,6 +2637,7 @@ class IssueNoteItemsCompanion extends UpdateCompanion<IssueNoteItemRecord> {
   static Insertable<IssueNoteItemRecord> custom({
     Expression<int>? id,
     Expression<String>? localId,
+    Expression<String>? remoteId,
     Expression<String>? issueNoteLocalId,
     Expression<String>? canCode,
     Expression<double>? quantity,
@@ -2607,6 +2649,7 @@ class IssueNoteItemsCompanion extends UpdateCompanion<IssueNoteItemRecord> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (localId != null) 'local_id': localId,
+      if (remoteId != null) 'remote_id': remoteId,
       if (issueNoteLocalId != null) 'issue_note_local_id': issueNoteLocalId,
       if (canCode != null) 'can_code': canCode,
       if (quantity != null) 'quantity': quantity,
@@ -2620,6 +2663,7 @@ class IssueNoteItemsCompanion extends UpdateCompanion<IssueNoteItemRecord> {
   IssueNoteItemsCompanion copyWith({
     Value<int>? id,
     Value<String>? localId,
+    Value<String?>? remoteId,
     Value<String>? issueNoteLocalId,
     Value<String>? canCode,
     Value<double>? quantity,
@@ -2631,6 +2675,7 @@ class IssueNoteItemsCompanion extends UpdateCompanion<IssueNoteItemRecord> {
     return IssueNoteItemsCompanion(
       id: id ?? this.id,
       localId: localId ?? this.localId,
+      remoteId: remoteId ?? this.remoteId,
       issueNoteLocalId: issueNoteLocalId ?? this.issueNoteLocalId,
       canCode: canCode ?? this.canCode,
       quantity: quantity ?? this.quantity,
@@ -2649,6 +2694,9 @@ class IssueNoteItemsCompanion extends UpdateCompanion<IssueNoteItemRecord> {
     }
     if (localId.present) {
       map['local_id'] = Variable<String>(localId.value);
+    }
+    if (remoteId.present) {
+      map['remote_id'] = Variable<String>(remoteId.value);
     }
     if (issueNoteLocalId.present) {
       map['issue_note_local_id'] = Variable<String>(issueNoteLocalId.value);
@@ -2679,6 +2727,7 @@ class IssueNoteItemsCompanion extends UpdateCompanion<IssueNoteItemRecord> {
     return (StringBuffer('IssueNoteItemsCompanion(')
           ..write('id: $id, ')
           ..write('localId: $localId, ')
+          ..write('remoteId: $remoteId, ')
           ..write('issueNoteLocalId: $issueNoteLocalId, ')
           ..write('canCode: $canCode, ')
           ..write('quantity: $quantity, ')
@@ -3425,6 +3474,17 @@ class $TransferNoteItemsTable extends TransferNoteItems
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
   );
+  static const VerificationMeta _remoteIdMeta = const VerificationMeta(
+    'remoteId',
+  );
+  @override
+  late final GeneratedColumn<String> remoteId = GeneratedColumn<String>(
+    'remote_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _transferNoteLocalIdMeta =
       const VerificationMeta('transferNoteLocalId');
   @override
@@ -3498,6 +3558,7 @@ class $TransferNoteItemsTable extends TransferNoteItems
   List<GeneratedColumn> get $columns => [
     id,
     localId,
+    remoteId,
     transferNoteLocalId,
     canCode,
     syncStatus,
@@ -3527,6 +3588,12 @@ class $TransferNoteItemsTable extends TransferNoteItems
       );
     } else if (isInserting) {
       context.missing(_localIdMeta);
+    }
+    if (data.containsKey('remote_id')) {
+      context.handle(
+        _remoteIdMeta,
+        remoteId.isAcceptableOrUnknown(data['remote_id']!, _remoteIdMeta),
+      );
     }
     if (data.containsKey('transfer_note_local_id')) {
       context.handle(
@@ -3588,6 +3655,10 @@ class $TransferNoteItemsTable extends TransferNoteItems
         DriftSqlType.string,
         data['${effectivePrefix}local_id'],
       )!,
+      remoteId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}remote_id'],
+      ),
       transferNoteLocalId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}transfer_note_local_id'],
@@ -3625,6 +3696,7 @@ class TransferNoteItemRecord extends DataClass
     implements Insertable<TransferNoteItemRecord> {
   final int id;
   final String localId;
+  final String? remoteId;
   final String transferNoteLocalId;
   final String canCode;
   final String syncStatus;
@@ -3634,6 +3706,7 @@ class TransferNoteItemRecord extends DataClass
   const TransferNoteItemRecord({
     required this.id,
     required this.localId,
+    this.remoteId,
     required this.transferNoteLocalId,
     required this.canCode,
     required this.syncStatus,
@@ -3646,6 +3719,9 @@ class TransferNoteItemRecord extends DataClass
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['local_id'] = Variable<String>(localId);
+    if (!nullToAbsent || remoteId != null) {
+      map['remote_id'] = Variable<String>(remoteId);
+    }
     map['transfer_note_local_id'] = Variable<String>(transferNoteLocalId);
     map['can_code'] = Variable<String>(canCode);
     map['sync_status'] = Variable<String>(syncStatus);
@@ -3661,6 +3737,9 @@ class TransferNoteItemRecord extends DataClass
     return TransferNoteItemsCompanion(
       id: Value(id),
       localId: Value(localId),
+      remoteId: remoteId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(remoteId),
       transferNoteLocalId: Value(transferNoteLocalId),
       canCode: Value(canCode),
       syncStatus: Value(syncStatus),
@@ -3680,6 +3759,7 @@ class TransferNoteItemRecord extends DataClass
     return TransferNoteItemRecord(
       id: serializer.fromJson<int>(json['id']),
       localId: serializer.fromJson<String>(json['localId']),
+      remoteId: serializer.fromJson<String?>(json['remoteId']),
       transferNoteLocalId: serializer.fromJson<String>(
         json['transferNoteLocalId'],
       ),
@@ -3696,6 +3776,7 @@ class TransferNoteItemRecord extends DataClass
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'localId': serializer.toJson<String>(localId),
+      'remoteId': serializer.toJson<String?>(remoteId),
       'transferNoteLocalId': serializer.toJson<String>(transferNoteLocalId),
       'canCode': serializer.toJson<String>(canCode),
       'syncStatus': serializer.toJson<String>(syncStatus),
@@ -3708,6 +3789,7 @@ class TransferNoteItemRecord extends DataClass
   TransferNoteItemRecord copyWith({
     int? id,
     String? localId,
+    Value<String?> remoteId = const Value.absent(),
     String? transferNoteLocalId,
     String? canCode,
     String? syncStatus,
@@ -3717,6 +3799,7 @@ class TransferNoteItemRecord extends DataClass
   }) => TransferNoteItemRecord(
     id: id ?? this.id,
     localId: localId ?? this.localId,
+    remoteId: remoteId.present ? remoteId.value : this.remoteId,
     transferNoteLocalId: transferNoteLocalId ?? this.transferNoteLocalId,
     canCode: canCode ?? this.canCode,
     syncStatus: syncStatus ?? this.syncStatus,
@@ -3728,6 +3811,7 @@ class TransferNoteItemRecord extends DataClass
     return TransferNoteItemRecord(
       id: data.id.present ? data.id.value : this.id,
       localId: data.localId.present ? data.localId.value : this.localId,
+      remoteId: data.remoteId.present ? data.remoteId.value : this.remoteId,
       transferNoteLocalId: data.transferNoteLocalId.present
           ? data.transferNoteLocalId.value
           : this.transferNoteLocalId,
@@ -3746,6 +3830,7 @@ class TransferNoteItemRecord extends DataClass
     return (StringBuffer('TransferNoteItemRecord(')
           ..write('id: $id, ')
           ..write('localId: $localId, ')
+          ..write('remoteId: $remoteId, ')
           ..write('transferNoteLocalId: $transferNoteLocalId, ')
           ..write('canCode: $canCode, ')
           ..write('syncStatus: $syncStatus, ')
@@ -3760,6 +3845,7 @@ class TransferNoteItemRecord extends DataClass
   int get hashCode => Object.hash(
     id,
     localId,
+    remoteId,
     transferNoteLocalId,
     canCode,
     syncStatus,
@@ -3773,6 +3859,7 @@ class TransferNoteItemRecord extends DataClass
       (other is TransferNoteItemRecord &&
           other.id == this.id &&
           other.localId == this.localId &&
+          other.remoteId == this.remoteId &&
           other.transferNoteLocalId == this.transferNoteLocalId &&
           other.canCode == this.canCode &&
           other.syncStatus == this.syncStatus &&
@@ -3785,6 +3872,7 @@ class TransferNoteItemsCompanion
     extends UpdateCompanion<TransferNoteItemRecord> {
   final Value<int> id;
   final Value<String> localId;
+  final Value<String?> remoteId;
   final Value<String> transferNoteLocalId;
   final Value<String> canCode;
   final Value<String> syncStatus;
@@ -3794,6 +3882,7 @@ class TransferNoteItemsCompanion
   const TransferNoteItemsCompanion({
     this.id = const Value.absent(),
     this.localId = const Value.absent(),
+    this.remoteId = const Value.absent(),
     this.transferNoteLocalId = const Value.absent(),
     this.canCode = const Value.absent(),
     this.syncStatus = const Value.absent(),
@@ -3804,6 +3893,7 @@ class TransferNoteItemsCompanion
   TransferNoteItemsCompanion.insert({
     this.id = const Value.absent(),
     required String localId,
+    this.remoteId = const Value.absent(),
     required String transferNoteLocalId,
     required String canCode,
     this.syncStatus = const Value.absent(),
@@ -3816,6 +3906,7 @@ class TransferNoteItemsCompanion
   static Insertable<TransferNoteItemRecord> custom({
     Expression<int>? id,
     Expression<String>? localId,
+    Expression<String>? remoteId,
     Expression<String>? transferNoteLocalId,
     Expression<String>? canCode,
     Expression<String>? syncStatus,
@@ -3826,6 +3917,7 @@ class TransferNoteItemsCompanion
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (localId != null) 'local_id': localId,
+      if (remoteId != null) 'remote_id': remoteId,
       if (transferNoteLocalId != null)
         'transfer_note_local_id': transferNoteLocalId,
       if (canCode != null) 'can_code': canCode,
@@ -3839,6 +3931,7 @@ class TransferNoteItemsCompanion
   TransferNoteItemsCompanion copyWith({
     Value<int>? id,
     Value<String>? localId,
+    Value<String?>? remoteId,
     Value<String>? transferNoteLocalId,
     Value<String>? canCode,
     Value<String>? syncStatus,
@@ -3849,6 +3942,7 @@ class TransferNoteItemsCompanion
     return TransferNoteItemsCompanion(
       id: id ?? this.id,
       localId: localId ?? this.localId,
+      remoteId: remoteId ?? this.remoteId,
       transferNoteLocalId: transferNoteLocalId ?? this.transferNoteLocalId,
       canCode: canCode ?? this.canCode,
       syncStatus: syncStatus ?? this.syncStatus,
@@ -3866,6 +3960,9 @@ class TransferNoteItemsCompanion
     }
     if (localId.present) {
       map['local_id'] = Variable<String>(localId.value);
+    }
+    if (remoteId.present) {
+      map['remote_id'] = Variable<String>(remoteId.value);
     }
     if (transferNoteLocalId.present) {
       map['transfer_note_local_id'] = Variable<String>(
@@ -3895,6 +3992,7 @@ class TransferNoteItemsCompanion
     return (StringBuffer('TransferNoteItemsCompanion(')
           ..write('id: $id, ')
           ..write('localId: $localId, ')
+          ..write('remoteId: $remoteId, ')
           ..write('transferNoteLocalId: $transferNoteLocalId, ')
           ..write('canCode: $canCode, ')
           ..write('syncStatus: $syncStatus, ')
@@ -5862,6 +5960,7 @@ typedef $$IssueNoteItemsTableCreateCompanionBuilder =
     IssueNoteItemsCompanion Function({
       Value<int> id,
       required String localId,
+      Value<String?> remoteId,
       required String issueNoteLocalId,
       required String canCode,
       required double quantity,
@@ -5874,6 +5973,7 @@ typedef $$IssueNoteItemsTableUpdateCompanionBuilder =
     IssueNoteItemsCompanion Function({
       Value<int> id,
       Value<String> localId,
+      Value<String?> remoteId,
       Value<String> issueNoteLocalId,
       Value<String> canCode,
       Value<double> quantity,
@@ -5899,6 +5999,11 @@ class $$IssueNoteItemsTableFilterComposer
 
   ColumnFilters<String> get localId => $composableBuilder(
     column: $table.localId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get remoteId => $composableBuilder(
+    column: $table.remoteId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5957,6 +6062,11 @@ class $$IssueNoteItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get remoteId => $composableBuilder(
+    column: $table.remoteId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get issueNoteLocalId => $composableBuilder(
     column: $table.issueNoteLocalId,
     builder: (column) => ColumnOrderings(column),
@@ -6007,6 +6117,9 @@ class $$IssueNoteItemsTableAnnotationComposer
 
   GeneratedColumn<String> get localId =>
       $composableBuilder(column: $table.localId, builder: (column) => column);
+
+  GeneratedColumn<String> get remoteId =>
+      $composableBuilder(column: $table.remoteId, builder: (column) => column);
 
   GeneratedColumn<String> get issueNoteLocalId => $composableBuilder(
     column: $table.issueNoteLocalId,
@@ -6073,6 +6186,7 @@ class $$IssueNoteItemsTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<String> localId = const Value.absent(),
+                Value<String?> remoteId = const Value.absent(),
                 Value<String> issueNoteLocalId = const Value.absent(),
                 Value<String> canCode = const Value.absent(),
                 Value<double> quantity = const Value.absent(),
@@ -6083,6 +6197,7 @@ class $$IssueNoteItemsTableTableManager
               }) => IssueNoteItemsCompanion(
                 id: id,
                 localId: localId,
+                remoteId: remoteId,
                 issueNoteLocalId: issueNoteLocalId,
                 canCode: canCode,
                 quantity: quantity,
@@ -6095,6 +6210,7 @@ class $$IssueNoteItemsTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 required String localId,
+                Value<String?> remoteId = const Value.absent(),
                 required String issueNoteLocalId,
                 required String canCode,
                 required double quantity,
@@ -6105,6 +6221,7 @@ class $$IssueNoteItemsTableTableManager
               }) => IssueNoteItemsCompanion.insert(
                 id: id,
                 localId: localId,
+                remoteId: remoteId,
                 issueNoteLocalId: issueNoteLocalId,
                 canCode: canCode,
                 quantity: quantity,
@@ -6485,6 +6602,7 @@ typedef $$TransferNoteItemsTableCreateCompanionBuilder =
     TransferNoteItemsCompanion Function({
       Value<int> id,
       required String localId,
+      Value<String?> remoteId,
       required String transferNoteLocalId,
       required String canCode,
       Value<String> syncStatus,
@@ -6496,6 +6614,7 @@ typedef $$TransferNoteItemsTableUpdateCompanionBuilder =
     TransferNoteItemsCompanion Function({
       Value<int> id,
       Value<String> localId,
+      Value<String?> remoteId,
       Value<String> transferNoteLocalId,
       Value<String> canCode,
       Value<String> syncStatus,
@@ -6520,6 +6639,11 @@ class $$TransferNoteItemsTableFilterComposer
 
   ColumnFilters<String> get localId => $composableBuilder(
     column: $table.localId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get remoteId => $composableBuilder(
+    column: $table.remoteId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6573,6 +6697,11 @@ class $$TransferNoteItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get remoteId => $composableBuilder(
+    column: $table.remoteId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get transferNoteLocalId => $composableBuilder(
     column: $table.transferNoteLocalId,
     builder: (column) => ColumnOrderings(column),
@@ -6618,6 +6747,9 @@ class $$TransferNoteItemsTableAnnotationComposer
 
   GeneratedColumn<String> get localId =>
       $composableBuilder(column: $table.localId, builder: (column) => column);
+
+  GeneratedColumn<String> get remoteId =>
+      $composableBuilder(column: $table.remoteId, builder: (column) => column);
 
   GeneratedColumn<String> get transferNoteLocalId => $composableBuilder(
     column: $table.transferNoteLocalId,
@@ -6684,6 +6816,7 @@ class $$TransferNoteItemsTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<String> localId = const Value.absent(),
+                Value<String?> remoteId = const Value.absent(),
                 Value<String> transferNoteLocalId = const Value.absent(),
                 Value<String> canCode = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
@@ -6693,6 +6826,7 @@ class $$TransferNoteItemsTableTableManager
               }) => TransferNoteItemsCompanion(
                 id: id,
                 localId: localId,
+                remoteId: remoteId,
                 transferNoteLocalId: transferNoteLocalId,
                 canCode: canCode,
                 syncStatus: syncStatus,
@@ -6704,6 +6838,7 @@ class $$TransferNoteItemsTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 required String localId,
+                Value<String?> remoteId = const Value.absent(),
                 required String transferNoteLocalId,
                 required String canCode,
                 Value<String> syncStatus = const Value.absent(),
@@ -6713,6 +6848,7 @@ class $$TransferNoteItemsTableTableManager
               }) => TransferNoteItemsCompanion.insert(
                 id: id,
                 localId: localId,
+                remoteId: remoteId,
                 transferNoteLocalId: transferNoteLocalId,
                 canCode: canCode,
                 syncStatus: syncStatus,

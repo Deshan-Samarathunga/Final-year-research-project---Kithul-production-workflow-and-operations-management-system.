@@ -402,7 +402,7 @@ class FieldCollectionRepository {
   }
 
   Stream<int> watchPendingSyncCount() {
-    final query = db.select(db.syncOutbox)..where((tbl) => tbl.status.equals('pending'));
+    final query = db.select(db.syncOutbox)..where((tbl) => tbl.status.equals('pending') | tbl.status.equals('failed'));
     return query.watch().map((rows) => rows.length);
   }
 

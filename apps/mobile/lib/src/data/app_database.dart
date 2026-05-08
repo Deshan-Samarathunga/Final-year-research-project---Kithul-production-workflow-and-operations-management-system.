@@ -78,6 +78,7 @@ class IssueNotes extends Table {
 class IssueNoteItems extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get localId => text().unique()();
+  TextColumn get remoteId => text().nullable()();
   TextColumn get issueNoteLocalId => text()();
   TextColumn get canCode => text()();
   RealColumn get quantity => real()();
@@ -107,6 +108,7 @@ class TransferNotes extends Table {
 class TransferNoteItems extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get localId => text().unique()();
+  TextColumn get remoteId => text().nullable()();
   TextColumn get transferNoteLocalId => text()();
   TextColumn get canCode => text()();
   TextColumn get syncStatus => text().withDefault(const Constant(SyncStatus.pendingCreate))();
@@ -156,7 +158,17 @@ final class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onUpgrade: (migrator, from, to) async {
+          if (from < 2) {
+            await migrator.addColumn(issueNoteItems, issueNoteItems.remoteId);
+            await migrator.addColumn(transferNoteItems, transferNoteItems.remoteId);
+          }
+        },
+      );
 }
 
 LazyDatabase _openConnection() {

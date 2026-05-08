@@ -1,7 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 import 'app_database.dart';
+import 'auth_repository.dart';
 import 'field_repository.dart';
+import 'sync_service.dart';
 
 final databaseProvider = Provider<AppDatabase>((ref) {
   final database = AppDatabase();
@@ -11,6 +14,18 @@ final databaseProvider = Provider<AppDatabase>((ref) {
 
 final fieldRepositoryProvider = Provider<FieldCollectionRepository>((ref) {
   return FieldCollectionRepository(ref.watch(databaseProvider));
+});
+
+final authRepositoryProvider = Provider<AuthRepository>((ref) {
+  return AuthRepository(ref.watch(databaseProvider));
+});
+
+final mobileSyncServiceProvider = Provider<MobileSyncService>((ref) {
+  return MobileSyncService(ref.watch(databaseProvider), ref.watch(authRepositoryProvider));
+});
+
+final sessionProvider = FutureProvider<MobileSession?>((ref) {
+  return ref.watch(authRepositoryProvider).getSession();
 });
 
 final seedDataProvider = FutureProvider<void>((ref) async {
@@ -42,4 +57,15 @@ final transferNoteItemsProvider = StreamProvider.family<List<TransferNoteItemRec
 
 final pendingSyncCountProvider = StreamProvider<int>((ref) {
   return ref.watch(fieldRepositoryProvider).watchPendingSyncCount();
+});
+
+final syncMetadataProvider = StreamProvider<Map<String, String>>((ref) {
+  final db = ref.watch(databaseProvider);
+  return db.select(db.syncMetadata).watch().map((rows) => {
+        for (final row in rows) row.key: row.value,
+      });
+});
+
+final connectivityProvider = StreamProvider<List<ConnectivityResult>>((ref) {
+  return Connectivity().onConnectivityChanged;
 });

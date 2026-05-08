@@ -73,11 +73,52 @@ Stores status history for a system can.
 Stores field collection issue notes.
 
 - `id` - primary key
+- `mobileLocalId` - unique mobile UUID for idempotent local sync
 - `issueNoteName` - issue note title
 - `collectionDate` - collection date
 - `centerId` - optional foreign key to `Center`
+- `submittedByEmployeeId` - optional foreign key to the field collector employee
 - `type` - issue note type
 - `status` - `Active` or `Completed`
 - `canCount` - number of cans in the issue note
 - `totalQty` - total quantity collected
+- `deletedAt` - soft-delete timestamp from offline sync
+- `createdAt`, `updatedAt` - audit timestamps
+
+### IssueNoteItem
+
+Stores can quantity rows inside an issue note.
+
+- `id` - primary key
+- `mobileLocalId` - unique mobile UUID for idempotent sync
+- `issueNoteId` - foreign key to `IssueNote`
+- `canCode` - system can code
+- `quantity` - collected quantity for that can
+- `deletedAt` - soft-delete timestamp from offline sync
+- `createdAt`, `updatedAt` - audit timestamps
+
+### TransferNote
+
+Stores empty-can transfer notes synced from mobile.
+
+- `id` - primary key
+- `mobileLocalId` - unique mobile UUID for idempotent sync
+- `transferNoteNo` - transfer note number
+- `transferDate` - transfer date
+- `centerId` - optional foreign key to `Center`
+- `submittedByEmployeeId` - optional foreign key to the field collector employee
+- `status` - `Active` or `Completed`
+- `canCount` - number of cans in the transfer note
+- `deletedAt` - soft-delete timestamp from offline sync
+- `createdAt`, `updatedAt` - audit timestamps
+
+### TransferNoteItem
+
+Stores empty-can rows inside a transfer note.
+
+- `id` - primary key
+- `mobileLocalId` - unique mobile UUID for idempotent sync
+- `transferNoteId` - foreign key to `TransferNote`
+- `canCode` - system can code
+- `deletedAt` - soft-delete timestamp from offline sync
 - `createdAt`, `updatedAt` - audit timestamps

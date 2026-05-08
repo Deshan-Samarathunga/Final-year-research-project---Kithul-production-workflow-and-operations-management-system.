@@ -25,6 +25,8 @@ model Employee {
   status       String   @default("Active")
   passwordHash String
   defaultLogin Boolean  @default(false)
+  issueNotes   IssueNote[]
+  transferNotes TransferNote[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
@@ -37,6 +39,7 @@ model Center {
   contactPhone String?
   status       String      @default("Active")
   issueNotes   IssueNote[]
+  transferNotes TransferNote[]
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 }
@@ -68,16 +71,69 @@ model CanHistory {
 
 model IssueNote {
   id             Int      @id @default(autoincrement())
+  mobileLocalId  String?  @unique
   issueNoteName  String
   collectionDate DateTime
   centerId       Int?
   center         Center?  @relation(fields: [centerId], references: [id], onDelete: SetNull)
+  submittedByEmployeeId Int?
+  submittedByEmployee   Employee? @relation(fields: [submittedByEmployeeId], references: [id], onDelete: SetNull)
   type           String
   status         String   @default("Active")
   canCount       Int      @default(0)
   totalQty       Float    @default(0)
+  items          IssueNoteItem[]
+  deletedAt      DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   @@index([status])
+  @@index([submittedByEmployeeId])
+}
+
+model IssueNoteItem {
+  id                Int       @id @default(autoincrement())
+  mobileLocalId     String?   @unique
+  issueNoteId       Int
+  issueNote         IssueNote @relation(fields: [issueNoteId], references: [id], onDelete: Cascade)
+  canCode           String
+  quantity          Float
+  deletedAt         DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([issueNoteId])
+}
+
+model TransferNote {
+  id                    Int       @id @default(autoincrement())
+  mobileLocalId         String?   @unique
+  transferNoteNo        String
+  transferDate          DateTime
+  centerId              Int?
+  center                Center?   @relation(fields: [centerId], references: [id], onDelete: SetNull)
+  submittedByEmployeeId Int?
+  submittedByEmployee   Employee? @relation(fields: [submittedByEmployeeId], references: [id], onDelete: SetNull)
+  status                String    @default("Active")
+  canCount              Int       @default(0)
+  items                 TransferNoteItem[]
+  deletedAt             DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([status])
+  @@index([submittedByEmployeeId])
+}
+
+model TransferNoteItem {
+  id                  Int          @id @default(autoincrement())
+  mobileLocalId       String?      @unique
+  transferNoteId      Int
+  transferNote        TransferNote @relation(fields: [transferNoteId], references: [id], onDelete: Cascade)
+  canCode             String
+  deletedAt           DateTime?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  @@index([transferNoteId])
 }

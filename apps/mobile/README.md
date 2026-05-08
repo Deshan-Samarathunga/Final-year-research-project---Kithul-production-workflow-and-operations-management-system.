@@ -11,7 +11,8 @@ Flutter offline-first mobile app for KithulFlow field collectors.
 - Add can IDs and quantities to active notes
 - Submit, view, and reopen notes
 - Transfer notes for empty cans
-- Local SQLite storage with a sync outbox prepared for future backend sync
+- Local SQLite storage with a sync outbox
+- Manual and automatic local WiFi sync with the web backend
 
 ## Run On Windows
 
@@ -33,9 +34,36 @@ flutter build apk --debug
 flutter run
 ```
 
+## Local WiFi Sync
+
+Start the web app on the PC first:
+
+```powershell
+npm.cmd run dev
+```
+
+Find the PC IPv4 address:
+
+```powershell
+ipconfig
+```
+
+Connect the phone and PC to the same WiFi. On the mobile login screen enter the server URL:
+
+```text
+http://<PC IPv4>:4000
+```
+
+Use the seeded Field Collector account:
+
+- User ID: `field01`
+- Password: `password123`
+
+The app syncs automatically after login, when connectivity returns, and after local changes. Use **Sync Status > Sync now** for manual sync.
+
 ## Notes
 
 - Local data is stored on the device in `kithulflow_mobile.sqlite`.
 - The app seeds screenshot-style demo centers, issue notes, and system cans on first launch.
-- Sync APIs are intentionally stubbed for this version; all field work saves offline first.
+- All field work saves offline first. Failed sync attempts stay queued and can be retried later.
 - `flutter test` currently hits a Flutter 3.41 Windows native-assets crash with `sqlite3.dll`. Android debug builds are verified.

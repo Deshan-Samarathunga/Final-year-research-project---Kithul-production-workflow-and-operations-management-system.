@@ -1,4 +1,5 @@
 import { FormEvent, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, Calendar, Plus, Search, X } from "lucide-react";
 import { centersApi, fieldCollectionApi, type IssueNote } from "../api/client";
@@ -11,7 +12,7 @@ import { PagePanel } from "../components/PagePanel";
 import { Pagination } from "../components/Pagination";
 import { formatDate } from "../utils/format";
 
-const issueTypes = ["Field collection", "Direct collection", "Transfer return"];
+const issueTypes = ["Sap", "Treacle", "Field collection", "Direct collection", "Transfer return"];
 
 export function FieldCollectionTabs({
   status,
@@ -163,29 +164,12 @@ function IssueNoteDialog({ onClose }: { onClose: () => void }) {
   );
 }
 
-function TransferNotesDialog({ onClose }: { onClose: () => void }) {
-  return (
-    <Modal
-      title="Transfer notes"
-      description="Prepare transfer note workflows for collection records."
-      onClose={onClose}
-      footer={<Button onClick={onClose}>Close</Button>}
-    >
-      <div className="rounded-md border border-slate-200 bg-white p-4 text-sm text-slate-600">
-        Transfer note creation is reserved inside this module. The button and route are wired so the workflow can be expanded
-        without changing the page structure.
-      </div>
-    </Modal>
-  );
-}
-
 export function FieldCollectionPage() {
   const [status, setStatus] = useState<"Active" | "Completed">("Active");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
   const [search, setSearch] = useState("");
   const [issueDialogOpen, setIssueDialogOpen] = useState(false);
-  const [transferOpen, setTransferOpen] = useState(false);
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.issueNotes(status, page, pageSize, search),
     queryFn: () => fieldCollectionApi.list({ status, page, pageSize, search })
@@ -199,7 +183,15 @@ export function FieldCollectionPage() {
       { header: "Center Agent", filter: "search", accessor: (row) => row.center?.agent ?? "-" },
       { header: "Can Count", filter: "sort", align: "right", accessor: (row) => row.canCount },
       { header: "Total Qty", filter: "sort", align: "right", accessor: (row) => row.totalQty },
-      { header: "Actions", align: "right", accessor: () => <span className="text-slate-400">--</span> }
+      {
+        header: "Actions",
+        align: "right",
+        accessor: (row) => (
+          <Link to={`/admin/field-collection/issue-notes/${row.id}`}>
+            <Button icon={<Search className="h-4 w-4" />}>{row.status === "Active" ? "Continue" : "View"}</Button>
+          </Link>
+        )
+      }
     ],
     []
   );
@@ -230,9 +222,11 @@ export function FieldCollectionPage() {
               />
             </div>
             <div className="flex gap-2">
-              <Button type="button" onClick={() => setTransferOpen(true)} icon={<ArrowRight className="h-4 w-4" />}>
-                Transfer notes
-              </Button>
+              <Link to="/admin/field-collection/transfers">
+                <Button type="button" icon={<ArrowRight className="h-4 w-4" />}>
+                  Transfer notes
+                </Button>
+              </Link>
               <Button type="button" variant="primary" onClick={() => setIssueDialogOpen(true)}>
                 New issue note
               </Button>
@@ -272,7 +266,6 @@ export function FieldCollectionPage() {
         />
       </PagePanel>
       {issueDialogOpen ? <IssueNoteDialog onClose={() => setIssueDialogOpen(false)} /> : null}
-      {transferOpen ? <TransferNotesDialog onClose={() => setTransferOpen(false)} /> : null}
     </>
   );
 }

@@ -9,6 +9,7 @@ const schema = z.object({
   JWT_SECRET: z.string().min(16).default("development-secret-change-me"),
   CLIENT_URL: z.string().url().default("http://localhost:5173"),
   PORT: z.coerce.number().int().positive().default(4000),
+  HOST: z.string().default("0.0.0.0"),
   NODE_ENV: z.enum(["development", "test", "production"]).default("development")
 });
 

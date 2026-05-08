@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -92,6 +94,7 @@ class _TransferNoteDetailScreenState extends ConsumerState<TransferNoteDetailScr
                                     canCode: _canController.text,
                                   );
                               _canController.clear();
+                              unawaited(ref.read(mobileSyncServiceProvider).syncNow());
                               setState(_reload);
                             },
                             icon: const Icon(Icons.add),
@@ -111,6 +114,7 @@ class _TransferNoteDetailScreenState extends ConsumerState<TransferNoteDetailScr
                   canEdit: canEdit,
                   onDelete: (itemLocalId) async {
                     await ref.read(fieldRepositoryProvider).deleteTransferCan(itemLocalId, widget.transferLocalId);
+                    unawaited(ref.read(mobileSyncServiceProvider).syncNow());
                     setState(_reload);
                   },
                 ),
@@ -120,6 +124,7 @@ class _TransferNoteDetailScreenState extends ConsumerState<TransferNoteDetailScr
                 FilledButton.icon(
                   onPressed: () async {
                     await ref.read(fieldRepositoryProvider).completeTransferNote(widget.transferLocalId);
+                    unawaited(ref.read(mobileSyncServiceProvider).syncNow());
                     setState(_reload);
                   },
                   icon: const Icon(Icons.check_circle_outline),

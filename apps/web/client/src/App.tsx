@@ -9,6 +9,8 @@ import { EmployeesPage } from "./pages/EmployeesPage";
 import { CentersPage } from "./pages/CentersPage";
 import { SystemCansPage } from "./pages/SystemCansPage";
 import { FieldCollectionPage } from "./pages/FieldCollectionPage";
+import { IssueNoteDetailPage, TransferNoteDetailPage } from "./pages/FieldCollectionDetailPage";
+import { TransferNotesPage } from "./pages/TransferNotesPage";
 
 function RequireAuth() {
   const location = useLocation();
@@ -44,6 +46,9 @@ export default function App() {
         <Route path="/admin/centers" element={<CentersPage />} />
         <Route path="/admin/system-cans" element={<SystemCansPage />} />
         <Route path="/admin/field-collection" element={<FieldCollectionPage />} />
+        <Route path="/admin/field-collection/issue-notes/:id" element={<IssueNoteDetailPage />} />
+        <Route path="/admin/field-collection/transfers" element={<TransferNotesPage />} />
+        <Route path="/admin/field-collection/transfers/:id" element={<TransferNoteDetailPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
     </Routes>
