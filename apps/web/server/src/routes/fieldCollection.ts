@@ -37,6 +37,40 @@ const mobileTransferWhere: Prisma.TransferNoteWhereInput = {
   OR: [{ mobileLocalId: { not: null } }, { submittedByEmployeeId: { not: null } }]
 };
 
+function stringParam(value: unknown) {
+  return String(value ?? "").trim();
+}
+
+function dateRange(from: string, to: string) {
+  const range: Prisma.DateTimeFilter = {};
+
+  if (from) {
+    const fromDate = new Date(from);
+    if (!Number.isNaN(fromDate.getTime())) range.gte = fromDate;
+  }
+
+  if (to) {
+    const toDate = new Date(to);
+    if (!Number.isNaN(toDate.getTime())) {
+      toDate.setHours(23, 59, 59, 999);
+      range.lte = toDate;
+    }
+  }
+
+  return Object.keys(range).length > 0 ? range : undefined;
+}
+
+function countFacets(values: Array<string | null | undefined>) {
+  const counts = new Map<string, number>();
+  for (const value of values) {
+    if (!value) continue;
+    counts.set(value, (counts.get(value) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([value, count]) => ({ value, count }));
+}
+
 router.get(
   "/monitor",
   asyncHandler(async (_request, response) => {
@@ -150,9 +184,13 @@ router.get(
   "/issue-notes",
   asyncHandler(async (request, response) => {
     const { page, pageSize, skip, take } = pagination(request.query);
-    const status = String(request.query.status ?? "Active");
-    const search = String(request.query.search ?? "").trim();
-    const where = {
+    const status = stringParam(request.query.status || "Active");
+    const search = stringParam(request.query.search);
+    const issueNote = stringParam(request.query.issueNote);
+    const type = stringParam(request.query.type);
+    const centerAgent = stringParam(request.query.centerAgent);
+    const collectionRange = dateRange(stringParam(request.query.collectionFrom), stringParam(request.query.collectionTo));
+    const where: Prisma.IssueNoteWhereInput = {
       status,
       deletedAt: null,
       ...(search
@@ -164,10 +202,14 @@ router.get(
               { center: { centerId: { contains: search, mode: "insensitive" as const } } }
             ]
           }
-        : {})
+        : {}),
+      ...(issueNote ? { issueNoteName: { contains: issueNote, mode: "insensitive" } } : {}),
+      ...(type ? { type } : {}),
+      ...(centerAgent ? { center: { agent: centerAgent } } : {}),
+      ...(collectionRange ? { collectionDate: collectionRange } : {})
     };
 
-    const [data, total, active, completed] = await Promise.all([
+    const [data, total, active, completed, typeCounts, agentRows] = await Promise.all([
       prisma.issueNote.findMany({
         where,
         include: { center: true, items: { where: { deletedAt: null }, orderBy: { createdAt: "asc" } } },
@@ -177,7 +219,9 @@ router.get(
       }),
       prisma.issueNote.count({ where }),
       prisma.issueNote.count({ where: { status: "Active", deletedAt: null } }),
-      prisma.issueNote.count({ where: { status: "Completed", deletedAt: null } })
+      prisma.issueNote.count({ where: { status: "Completed", deletedAt: null } }),
+      prisma.issueNote.groupBy({ by: ["type"], where, _count: { _all: true }, orderBy: { type: "asc" } }),
+      prisma.issueNote.findMany({ where, select: { center: { select: { agent: true } } } })
     ]);
 
     response.json({
@@ -186,7 +230,11 @@ router.get(
       page,
       pageSize,
       total,
-      pageCount: Math.max(Math.ceil(total / pageSize), 1)
+      pageCount: Math.max(Math.ceil(total / pageSize), 1),
+      facets: {
+        types: typeCounts.map((item) => ({ value: item.type, count: item._count._all })),
+        agents: countFacets(agentRows.map((row) => row.center?.agent))
+      }
     });
   })
 );
@@ -244,9 +292,12 @@ router.get(
   "/transfer-notes",
   asyncHandler(async (request, response) => {
     const { page, pageSize, skip, take } = pagination(request.query);
-    const status = String(request.query.status ?? "Active");
-    const search = String(request.query.search ?? "").trim();
-    const where = {
+    const status = stringParam(request.query.status || "Active");
+    const search = stringParam(request.query.search);
+    const transferNote = stringParam(request.query.transferNote);
+    const agent = stringParam(request.query.agent);
+    const transferRange = dateRange(stringParam(request.query.transferFrom), stringParam(request.query.transferTo));
+    const where: Prisma.TransferNoteWhereInput = {
       status,
       deletedAt: null,
       ...(search
@@ -257,10 +308,13 @@ router.get(
               { center: { centerId: { contains: search, mode: "insensitive" as const } } }
             ]
           }
-        : {})
+        : {}),
+      ...(transferNote ? { transferNoteNo: { contains: transferNote, mode: "insensitive" } } : {}),
+      ...(agent ? { center: { agent } } : {}),
+      ...(transferRange ? { transferDate: transferRange } : {})
     };
 
-    const [data, total, active, completed] = await Promise.all([
+    const [data, total, active, completed, agentRows] = await Promise.all([
       prisma.transferNote.findMany({
         where,
         include: { center: true, items: { where: { deletedAt: null }, orderBy: { createdAt: "asc" } } },
@@ -270,7 +324,8 @@ router.get(
       }),
       prisma.transferNote.count({ where }),
       prisma.transferNote.count({ where: { status: "Active", deletedAt: null } }),
-      prisma.transferNote.count({ where: { status: "Completed", deletedAt: null } })
+      prisma.transferNote.count({ where: { status: "Completed", deletedAt: null } }),
+      prisma.transferNote.findMany({ where, select: { center: { select: { agent: true } } } })
     ]);
 
     response.json({
@@ -279,7 +334,10 @@ router.get(
       page,
       pageSize,
       total,
-      pageCount: Math.max(Math.ceil(total / pageSize), 1)
+      pageCount: Math.max(Math.ceil(total / pageSize), 1),
+      facets: {
+        agents: countFacets(agentRows.map((row) => row.center?.agent))
+      }
     });
   })
 );

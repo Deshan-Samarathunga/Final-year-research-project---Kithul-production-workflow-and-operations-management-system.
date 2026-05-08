@@ -1,9 +1,11 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Search } from "lucide-react";
-import { fieldCollectionApi, type TransferNote } from "../api/client";
+import { fieldCollectionApi, type TransferNote, type TransferNoteFilters } from "../api/client";
+import { queryKeys } from "../api/queryKeys";
 import { Button } from "../components/Button";
+import { DateRangeColumnFilter, OptionColumnFilter, TextColumnFilter, type DateRangeValue } from "../components/ColumnFilters";
 import { DataTable, type Column } from "../components/Table";
 import { EmptyState } from "../components/EmptyState";
 import { PagePanel } from "../components/PagePanel";
@@ -16,16 +18,63 @@ export function TransferNotesPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
   const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState<TransferNoteFilters>({});
+  const filterKey = JSON.stringify(filters);
   const { data, isLoading } = useQuery({
-    queryKey: ["transfer-notes", status, page, pageSize, search],
-    queryFn: () => fieldCollectionApi.transfers({ status, page, pageSize, search })
+    queryKey: queryKeys.transferNotes(status, page, pageSize, search, filterKey),
+    queryFn: () => fieldCollectionApi.transfers({ status, page, pageSize, search, filters })
   });
+
+  const updateFilter = useCallback((key: keyof TransferNoteFilters, value: string) => {
+    setFilters((current) => ({ ...current, [key]: value }));
+    setPage(1);
+  }, []);
+
+  const updateTransferRange = useCallback((value: DateRangeValue) => {
+    setFilters((current) => ({ ...current, transferFrom: value.from, transferTo: value.to }));
+    setPage(1);
+  }, []);
 
   const columns = useMemo<Column<TransferNote>[]>(
     () => [
-      { header: "Transfer Note", filter: "search", accessor: (row) => row.transferNoteNo },
-      { header: "Agent", filter: "search", accessor: (row) => row.center?.agent ?? "-" },
-      { header: "Transfer Date", filter: "date", accessor: (row) => formatDate(row.transferDate) },
+      {
+        header: "Transfer Note",
+        filterControl: (
+          <TextColumnFilter
+            value={filters.transferNote ?? ""}
+            placeholder="Search transfer notes"
+            onChange={(value) => updateFilter("transferNote", value)}
+          />
+        ),
+        accessor: (row) => row.transferNoteNo
+      },
+      {
+        header: "Agent",
+        filterControl: (
+          <OptionColumnFilter
+            value={filters.agent ?? ""}
+            allLabel={`All agents (${data?.total ?? 0})`}
+            searchPlaceholder="Search agents"
+            options={(data?.facets.agents ?? []).map((agent) => ({
+              label: agent.value,
+              value: agent.value,
+              count: agent.count
+            }))}
+            onChange={(value) => updateFilter("agent", value)}
+          />
+        ),
+        accessor: (row) => row.center?.agent ?? "-"
+      },
+      {
+        header: "Transfer Date",
+        filterControl: (
+          <DateRangeColumnFilter
+            value={{ from: filters.transferFrom ?? "", to: filters.transferTo ?? "" }}
+            onChange={updateTransferRange}
+          />
+        ),
+        accessor: (row) => formatDate(row.transferDate)
+      },
       { header: "Can Count", filter: "sort", align: "right", accessor: (row) => row.canCount },
       {
         header: "Actions",
@@ -37,7 +86,7 @@ export function TransferNotesPage() {
         )
       }
     ],
-    []
+    [data?.facets.agents, data?.total, filters, updateFilter, updateTransferRange]
   );
 
   return (

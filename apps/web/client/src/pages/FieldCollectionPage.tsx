@@ -1,10 +1,11 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useCallback, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, Calendar, Plus, Search, X } from "lucide-react";
-import { centersApi, fieldCollectionApi, type IssueNote } from "../api/client";
+import { centersApi, fieldCollectionApi, type FieldCollectionFilters, type IssueNote } from "../api/client";
 import { queryKeys } from "../api/queryKeys";
 import { Button } from "../components/Button";
+import { DateRangeColumnFilter, OptionColumnFilter, TextColumnFilter, type DateRangeValue } from "../components/ColumnFilters";
 import { DataTable, type Column } from "../components/Table";
 import { EmptyState } from "../components/EmptyState";
 import { Modal } from "../components/Modal";
@@ -13,6 +14,10 @@ import { Pagination } from "../components/Pagination";
 import { formatDate } from "../utils/format";
 
 const issueTypes = ["Sap", "Treacle", "Field collection", "Direct collection", "Transfer return"];
+
+function countFor(options: { value: string; count: number }[] | undefined, value: string) {
+  return options?.find((option) => option.value === value)?.count ?? 0;
+}
 
 export function FieldCollectionTabs({
   status,
@@ -169,18 +174,81 @@ export function FieldCollectionPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
   const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState<FieldCollectionFilters>({});
   const [issueDialogOpen, setIssueDialogOpen] = useState(false);
+  const filterKey = JSON.stringify(filters);
   const { data, isLoading } = useQuery({
-    queryKey: queryKeys.issueNotes(status, page, pageSize, search),
-    queryFn: () => fieldCollectionApi.list({ status, page, pageSize, search })
+    queryKey: queryKeys.issueNotes(status, page, pageSize, search, filterKey),
+    queryFn: () => fieldCollectionApi.list({ status, page, pageSize, search, filters })
   });
+
+  const updateFilter = useCallback((key: keyof FieldCollectionFilters, value: string) => {
+    setFilters((current) => ({ ...current, [key]: value }));
+    setPage(1);
+  }, []);
+
+  const updateCollectionRange = useCallback((value: DateRangeValue) => {
+    setFilters((current) => ({ ...current, collectionFrom: value.from, collectionTo: value.to }));
+    setPage(1);
+  }, []);
 
   const columns = useMemo<Column<IssueNote>[]>(
     () => [
-      { header: "Issue Note", filter: "search", accessor: (row) => row.issueNoteName },
-      { header: "Type", filter: "sort", accessor: (row) => row.type },
-      { header: "Collection Date", filter: "date", accessor: (row) => formatDate(row.collectionDate) },
-      { header: "Center Agent", filter: "search", accessor: (row) => row.center?.agent ?? "-" },
+      {
+        header: "Issue Note",
+        filterControl: (
+          <TextColumnFilter
+            value={filters.issueNote ?? ""}
+            placeholder="Search issue notes"
+            onChange={(value) => updateFilter("issueNote", value)}
+          />
+        ),
+        accessor: (row) => row.issueNoteName
+      },
+      {
+        header: "Type",
+        filterControl: (
+          <OptionColumnFilter
+            value={filters.type ?? ""}
+            allLabel={`All types (${data?.total ?? 0})`}
+            searchPlaceholder="Search types"
+            options={(data?.facets.types.length ? data.facets.types : issueTypes.map((type) => ({ value: type, count: 0 }))).map((type) => ({
+              label: type.value,
+              value: type.value,
+              count: countFor(data?.facets.types, type.value)
+            }))}
+            onChange={(value) => updateFilter("type", value)}
+          />
+        ),
+        accessor: (row) => row.type
+      },
+      {
+        header: "Collection Date",
+        filterControl: (
+          <DateRangeColumnFilter
+            value={{ from: filters.collectionFrom ?? "", to: filters.collectionTo ?? "" }}
+            onChange={updateCollectionRange}
+          />
+        ),
+        accessor: (row) => formatDate(row.collectionDate)
+      },
+      {
+        header: "Center Agent",
+        filterControl: (
+          <OptionColumnFilter
+            value={filters.centerAgent ?? ""}
+            allLabel={`All agents (${data?.total ?? 0})`}
+            searchPlaceholder="Search agents"
+            options={(data?.facets.agents ?? []).map((agent) => ({
+              label: agent.value,
+              value: agent.value,
+              count: agent.count
+            }))}
+            onChange={(value) => updateFilter("centerAgent", value)}
+          />
+        ),
+        accessor: (row) => row.center?.agent ?? "-"
+      },
       { header: "Can Count", filter: "sort", align: "right", accessor: (row) => row.canCount },
       { header: "Total Qty", filter: "sort", align: "right", accessor: (row) => row.totalQty },
       {
@@ -193,7 +261,7 @@ export function FieldCollectionPage() {
         )
       }
     ],
-    []
+    [data?.facets.agents, data?.facets.types, data?.total, filters, updateCollectionRange, updateFilter]
   );
 
   return (

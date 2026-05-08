@@ -38,6 +38,21 @@ export type SystemCanFilters = {
   updatedTo?: string;
 };
 
+export type FieldCollectionFilters = {
+  issueNote?: string;
+  type?: string;
+  centerAgent?: string;
+  collectionFrom?: string;
+  collectionTo?: string;
+};
+
+export type TransferNoteFilters = {
+  transferNote?: string;
+  agent?: string;
+  transferFrom?: string;
+  transferTo?: string;
+};
+
 export type AdminUser = {
   id: number;
   userId: string;
@@ -129,6 +144,10 @@ export type IssueNoteResponse = PaginatedResponse<IssueNote> & {
     active: number;
     completed: number;
   };
+  facets: {
+    types: FacetOption[];
+    agents: FacetOption[];
+  };
 };
 
 export type TransferNoteItem = {
@@ -162,6 +181,9 @@ export type TransferNoteResponse = PaginatedResponse<TransferNote> & {
   counts: {
     active: number;
     completed: number;
+  };
+  facets: {
+    agents: FacetOption[];
   };
 };
 
@@ -345,12 +367,13 @@ export const systemCansApi = {
 
 export const fieldCollectionApi = {
   monitor: () => api<FieldMonitorResponse>("/api/field-collection/monitor"),
-  list: (params: { status: "Active" | "Completed"; page: number; pageSize: number; search?: string }) => {
+  list: (params: { status: "Active" | "Completed"; page: number; pageSize: number; search?: string; filters?: FieldCollectionFilters }) => {
     const query = new URLSearchParams({
       status: params.status,
       page: String(params.page),
       pageSize: String(params.pageSize),
-      ...(params.search ? { search: params.search } : {})
+      ...(params.search ? { search: params.search } : {}),
+      ...cleanParams(params.filters)
     });
     return api<IssueNoteResponse>(`/api/field-collection/issue-notes?${query}`);
   },
@@ -359,12 +382,13 @@ export const fieldCollectionApi = {
   detail: (id: number) => api<IssueNote>(`/api/field-collection/issue-notes/${id}`),
   update: (id: number, payload: Partial<IssueNote>) =>
     api<IssueNote>(`/api/field-collection/issue-notes/${id}`, { method: "PATCH", json: payload }),
-  transfers: (params: { status: "Active" | "Completed"; page: number; pageSize: number; search?: string }) => {
+  transfers: (params: { status: "Active" | "Completed"; page: number; pageSize: number; search?: string; filters?: TransferNoteFilters }) => {
     const query = new URLSearchParams({
       status: params.status,
       page: String(params.page),
       pageSize: String(params.pageSize),
-      ...(params.search ? { search: params.search } : {})
+      ...(params.search ? { search: params.search } : {}),
+      ...cleanParams(params.filters)
     });
     return api<TransferNoteResponse>(`/api/field-collection/transfer-notes?${query}`);
   },
