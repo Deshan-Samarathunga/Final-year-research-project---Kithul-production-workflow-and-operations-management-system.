@@ -92,6 +92,8 @@ npm.cmd run seed:local   # seed local data through modular scripts
 
 The scoped admin pages are Dashboard, Employees, Centers, System Cans, and Field Collection. System Cans can generate plain can-ID QR labels for mobile scanning. Other sidebar modules are visual placeholders for the next phase.
 
+The Dashboard includes a **Mobile Received Data** card that opens `/admin/field-monitor`. This monitor page shows the latest mobile sync event, received issue notes, can rows with quantity/pH/Brix, transfer notes, and failed syncs. It auto-refreshes every 10 seconds and also has a manual Refresh button.
+
 ## Database Reference Files
 
 The `apps/web/db/` folder contains SQL reference files for the full schema, module-level schema slices, migration snapshots, and verification queries. Prisma remains the normal migration runner under `apps/web/server/prisma`.

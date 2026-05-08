@@ -100,6 +100,7 @@ export type IssueNote = {
   centerId: number | null;
   center: Center | null;
   submittedByEmployeeId: number | null;
+  submittedByEmployee?: Employee | null;
   type: string;
   status: "Active" | "Completed";
   canCount: number;
@@ -148,6 +149,7 @@ export type TransferNote = {
   centerId: number | null;
   center: Center | null;
   submittedByEmployeeId: number | null;
+  submittedByEmployee?: Employee | null;
   status: "Active" | "Completed";
   canCount: number;
   items?: TransferNoteItem[];
@@ -173,6 +175,37 @@ export type DashboardCard = {
     value: number;
     tone: "blue" | "green" | "red" | "yellow" | "purple";
   }>;
+};
+
+export type MobileSyncEvent = {
+  id: number;
+  employeeId: number | null;
+  employee: Employee | null;
+  status: "Success" | "Failed";
+  issueNoteCount: number;
+  issueNoteItemCount: number;
+  transferNoteCount: number;
+  transferNoteItemCount: number;
+  errorMessage: string | null;
+  startedAt: string;
+  completedAt: string | null;
+};
+
+export type FieldMonitorResponse = {
+  serverTime: string;
+  metrics: {
+    lastSyncAt: string | null;
+    lastSyncEmployee: string | null;
+    receivedIssueNotesToday: number;
+    receivedCanRowsToday: number;
+    activeMobileNotes: number;
+    failedSyncsToday: number;
+  };
+  latestSuccessfulSync: MobileSyncEvent | null;
+  syncEvents: MobileSyncEvent[];
+  issueNotes: IssueNote[];
+  issueNoteItems: Array<IssueNoteItem & { issueNote: IssueNote }>;
+  transferNotes: TransferNote[];
 };
 
 export class ApiError extends Error {
@@ -311,6 +344,7 @@ export const systemCansApi = {
 };
 
 export const fieldCollectionApi = {
+  monitor: () => api<FieldMonitorResponse>("/api/field-collection/monitor"),
   list: (params: { status: "Active" | "Completed"; page: number; pageSize: number; search?: string }) => {
     const query = new URLSearchParams({
       status: params.status,

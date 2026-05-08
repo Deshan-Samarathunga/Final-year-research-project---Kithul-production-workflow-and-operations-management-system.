@@ -1,9 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import {
   Archive,
   BadgeDollarSign,
   Boxes,
   ClipboardList,
+  DatabaseZap,
   Layers3,
   PackageCheck,
   SlidersHorizontal
@@ -14,12 +16,18 @@ import { Badge } from "../components/Badge";
 
 const cardIcons = {
   "field-collection": Archive,
+  "mobile-received-data": DatabaseZap,
   processing: SlidersHorizontal,
   packaging: PackageCheck,
   labeling: ClipboardList,
   "order-management": PackageCheck,
   "inventory-management": Layers3,
   finance: BadgeDollarSign
+};
+
+const cardLinks: Record<string, string> = {
+  "field-collection": "/admin/field-collection",
+  "mobile-received-data": "/admin/field-monitor"
 };
 
 const toneClasses: Record<string, string> = {
@@ -34,9 +42,12 @@ const toneClasses: Record<string, string> = {
 
 function DashboardCardView({ card }: { card: DashboardCard }) {
   const Icon = cardIcons[card.key as keyof typeof cardIcons] ?? Boxes;
-
-  return (
-    <article className={`min-h-[170px] rounded-md border border-slate-200 p-4 shadow-panel ${toneClasses[card.tone]}`}>
+  const content = (
+    <article
+      className={`min-h-[170px] rounded-md border border-slate-200 p-4 shadow-panel transition ${
+        cardLinks[card.key] ? "hover:border-blue-300 hover:shadow-md" : ""
+      } ${toneClasses[card.tone]}`}
+    >
       <div className="flex items-start gap-4">
         <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/70 text-blue-600 shadow-sm">
           <Icon className="h-5 w-5" />
@@ -54,6 +65,14 @@ function DashboardCardView({ card }: { card: DashboardCard }) {
         ))}
       </div>
     </article>
+  );
+
+  return cardLinks[card.key] ? (
+    <Link to={cardLinks[card.key]} className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600">
+      {content}
+    </Link>
+  ) : (
+    content
   );
 }
 

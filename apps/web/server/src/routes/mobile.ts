@@ -133,119 +133,130 @@ router.post(
   "/sync",
   requireMobileEmployee,
   asyncHandler(async (request, response) => {
-    const changes = syncSchema.parse(request.body.changes ?? request.body);
+    const startedAt = new Date();
     const employeeId = request.mobileEmployee!.id;
+    let changes: z.infer<typeof syncSchema> | null = null;
 
-    await prisma.$transaction(async (tx) => {
-      for (const note of changes.issueNotes) {
-        const centerId = await findCenterId(tx, note.centerRemoteId, note.centerCode);
-        await tx.issueNote.upsert({
-          where: { mobileLocalId: note.localId },
-          update: {
-            issueNoteName: note.issueNoteName,
-            collectionDate: note.collectionDate,
-            centerId,
-            submittedByEmployeeId: employeeId,
-            type: note.type,
-            status: note.status,
-            canCount: note.canCount,
-            totalQty: note.totalQty,
-            deletedAt: note.deletedAt ?? null
-          },
-          create: {
-            mobileLocalId: note.localId,
-            issueNoteName: note.issueNoteName,
-            collectionDate: note.collectionDate,
-            centerId,
-            submittedByEmployeeId: employeeId,
-            type: note.type,
-            status: note.status,
-            canCount: note.canCount,
-            totalQty: note.totalQty,
-            deletedAt: note.deletedAt ?? null
-          }
-        });
-      }
+    try {
+      changes = syncSchema.parse(request.body.changes ?? request.body);
 
-      for (const item of changes.issueNoteItems) {
-        const parent = await tx.issueNote.findUnique({ where: { mobileLocalId: item.issueNoteLocalId } });
-        if (!parent) continue;
+      await prisma.$transaction(async (tx) => {
+        for (const note of changes!.issueNotes) {
+          const centerId = await findCenterId(tx, note.centerRemoteId, note.centerCode);
+          await tx.issueNote.upsert({
+            where: { mobileLocalId: note.localId },
+            update: {
+              issueNoteName: note.issueNoteName,
+              collectionDate: note.collectionDate,
+              centerId,
+              submittedByEmployeeId: employeeId,
+              type: note.type,
+              status: note.status,
+              canCount: note.canCount,
+              totalQty: note.totalQty,
+              deletedAt: note.deletedAt ?? null
+            },
+            create: {
+              mobileLocalId: note.localId,
+              issueNoteName: note.issueNoteName,
+              collectionDate: note.collectionDate,
+              centerId,
+              submittedByEmployeeId: employeeId,
+              type: note.type,
+              status: note.status,
+              canCount: note.canCount,
+              totalQty: note.totalQty,
+              deletedAt: note.deletedAt ?? null
+            }
+          });
+        }
 
-        await tx.issueNoteItem.upsert({
-          where: { mobileLocalId: item.localId },
-          update: {
-            issueNoteId: parent.id,
-            canCode: item.canCode.toUpperCase(),
-            quantity: item.quantity,
-            phValue: item.phValue,
-            brixValue: item.brixValue,
-            deletedAt: item.deletedAt ?? null
-          },
-          create: {
-            mobileLocalId: item.localId,
-            issueNoteId: parent.id,
-            canCode: item.canCode.toUpperCase(),
-            quantity: item.quantity,
-            phValue: item.phValue,
-            brixValue: item.brixValue,
-            deletedAt: item.deletedAt ?? null
-          }
-        });
-        await refreshIssueTotals(tx, parent.id);
-      }
+        for (const item of changes!.issueNoteItems) {
+          const parent = await tx.issueNote.findUnique({ where: { mobileLocalId: item.issueNoteLocalId } });
+          if (!parent) continue;
 
-      for (const note of changes.transferNotes) {
-        const centerId = await findCenterId(tx, note.centerRemoteId, note.centerCode);
-        await tx.transferNote.upsert({
-          where: { mobileLocalId: note.localId },
-          update: {
-            transferNoteNo: note.transferNoteNo,
-            transferDate: note.transferDate,
-            centerId,
-            submittedByEmployeeId: employeeId,
-            status: note.status,
-            canCount: note.canCount,
-            deletedAt: note.deletedAt ?? null
-          },
-          create: {
-            mobileLocalId: note.localId,
-            transferNoteNo: note.transferNoteNo,
-            transferDate: note.transferDate,
-            centerId,
-            submittedByEmployeeId: employeeId,
-            status: note.status,
-            canCount: note.canCount,
-            deletedAt: note.deletedAt ?? null
-          }
-        });
-      }
+          await tx.issueNoteItem.upsert({
+            where: { mobileLocalId: item.localId },
+            update: {
+              issueNoteId: parent.id,
+              canCode: item.canCode.toUpperCase(),
+              quantity: item.quantity,
+              phValue: item.phValue,
+              brixValue: item.brixValue,
+              deletedAt: item.deletedAt ?? null
+            },
+            create: {
+              mobileLocalId: item.localId,
+              issueNoteId: parent.id,
+              canCode: item.canCode.toUpperCase(),
+              quantity: item.quantity,
+              phValue: item.phValue,
+              brixValue: item.brixValue,
+              deletedAt: item.deletedAt ?? null
+            }
+          });
+          await refreshIssueTotals(tx, parent.id);
+        }
 
-      for (const item of changes.transferNoteItems) {
-        const parent = await tx.transferNote.findUnique({ where: { mobileLocalId: item.transferNoteLocalId } });
-        if (!parent) continue;
+        for (const note of changes!.transferNotes) {
+          const centerId = await findCenterId(tx, note.centerRemoteId, note.centerCode);
+          await tx.transferNote.upsert({
+            where: { mobileLocalId: note.localId },
+            update: {
+              transferNoteNo: note.transferNoteNo,
+              transferDate: note.transferDate,
+              centerId,
+              submittedByEmployeeId: employeeId,
+              status: note.status,
+              canCount: note.canCount,
+              deletedAt: note.deletedAt ?? null
+            },
+            create: {
+              mobileLocalId: note.localId,
+              transferNoteNo: note.transferNoteNo,
+              transferDate: note.transferDate,
+              centerId,
+              submittedByEmployeeId: employeeId,
+              status: note.status,
+              canCount: note.canCount,
+              deletedAt: note.deletedAt ?? null
+            }
+          });
+        }
 
-        await tx.transferNoteItem.upsert({
-          where: { mobileLocalId: item.localId },
-          update: {
-            transferNoteId: parent.id,
-            canCode: item.canCode.toUpperCase(),
-            deletedAt: item.deletedAt ?? null
-          },
-          create: {
-            mobileLocalId: item.localId,
-            transferNoteId: parent.id,
-            canCode: item.canCode.toUpperCase(),
-            deletedAt: item.deletedAt ?? null
-          }
-        });
-        await refreshTransferCount(tx, parent.id);
-      }
-    });
+        for (const item of changes!.transferNoteItems) {
+          const parent = await tx.transferNote.findUnique({ where: { mobileLocalId: item.transferNoteLocalId } });
+          if (!parent) continue;
 
-    response.json({
-      acceptedAt: new Date().toISOString(),
-      bootstrap: await buildBootstrap()
-    });
+          await tx.transferNoteItem.upsert({
+            where: { mobileLocalId: item.localId },
+            update: {
+              transferNoteId: parent.id,
+              canCode: item.canCode.toUpperCase(),
+              deletedAt: item.deletedAt ?? null
+            },
+            create: {
+              mobileLocalId: item.localId,
+              transferNoteId: parent.id,
+              canCode: item.canCode.toUpperCase(),
+              deletedAt: item.deletedAt ?? null
+            }
+          });
+          await refreshTransferCount(tx, parent.id);
+        }
+      });
+
+      const bootstrap = await buildBootstrap();
+      await recordMobileSyncEvent(employeeId, "Success", startedAt, changes);
+
+      response.json({
+        acceptedAt: new Date().toISOString(),
+        bootstrap
+      });
+    } catch (error) {
+      await recordMobileSyncEvent(employeeId, "Failed", startedAt, changes, errorMessage(error));
+      throw error;
+    }
   })
 );
 
@@ -319,6 +330,42 @@ async function refreshTransferCount(tx: Prisma.TransactionClient, transferNoteId
     where: { id: transferNoteId },
     data: { canCount: count }
   });
+}
+
+function syncCounts(changes: z.infer<typeof syncSchema> | null) {
+  return {
+    issueNoteCount: changes?.issueNotes.length ?? 0,
+    issueNoteItemCount: changes?.issueNoteItems.length ?? 0,
+    transferNoteCount: changes?.transferNotes.length ?? 0,
+    transferNoteItemCount: changes?.transferNoteItems.length ?? 0
+  };
+}
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+async function recordMobileSyncEvent(
+  employeeId: number,
+  status: "Success" | "Failed",
+  startedAt: Date,
+  changes: z.infer<typeof syncSchema> | null,
+  error?: string
+) {
+  try {
+    await prisma.mobileSyncEvent.create({
+      data: {
+        employeeId,
+        status,
+        ...syncCounts(changes),
+        errorMessage: error ? error.slice(0, 2000) : null,
+        startedAt,
+        completedAt: new Date()
+      }
+    });
+  } catch {
+    // Sync logging must not block the mobile sync response.
+  }
 }
 
 export { router as mobileRouter };

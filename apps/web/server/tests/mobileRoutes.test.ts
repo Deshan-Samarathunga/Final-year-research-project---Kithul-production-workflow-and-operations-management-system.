@@ -37,6 +37,9 @@ const mockPrisma = {
     count: vi.fn(),
     upsert: vi.fn()
   },
+  mobileSyncEvent: {
+    create: vi.fn()
+  },
   $transaction: vi.fn((handler) => handler(mockPrisma))
 };
 
@@ -87,6 +90,7 @@ beforeEach(() => {
   mockPrisma.transferNote.update.mockResolvedValue({ id: 40 });
   mockPrisma.transferNoteItem.count.mockResolvedValue(1);
   mockPrisma.transferNoteItem.upsert.mockResolvedValue({ id: 50 });
+  mockPrisma.mobileSyncEvent.create.mockResolvedValue({ id: 1 });
 });
 
 describe("mobile sync routes", () => {
@@ -168,6 +172,18 @@ describe("mobile sync routes", () => {
       expect.objectContaining({
         create: expect.objectContaining({ phValue: 6.2, brixValue: 14.8 }),
         update: expect.objectContaining({ phValue: 6.2, brixValue: 14.8 })
+      })
+    );
+    expect(mockPrisma.mobileSyncEvent.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          employeeId: 7,
+          status: "Success",
+          issueNoteCount: 1,
+          issueNoteItemCount: 1,
+          transferNoteCount: 0,
+          transferNoteItemCount: 0
+        })
       })
     );
   });

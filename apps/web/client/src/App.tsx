@@ -10,6 +10,7 @@ import { CentersPage } from "./pages/CentersPage";
 import { SystemCansPage } from "./pages/SystemCansPage";
 import { FieldCollectionPage } from "./pages/FieldCollectionPage";
 import { IssueNoteDetailPage, TransferNoteDetailPage } from "./pages/FieldCollectionDetailPage";
+import { FieldMonitorPage } from "./pages/FieldMonitorPage";
 import { TransferNotesPage } from "./pages/TransferNotesPage";
 
 function RequireAuth() {
@@ -46,6 +47,7 @@ export default function App() {
         <Route path="/admin/centers" element={<CentersPage />} />
         <Route path="/admin/system-cans" element={<SystemCansPage />} />
         <Route path="/admin/field-collection" element={<FieldCollectionPage />} />
+        <Route path="/admin/field-monitor" element={<FieldMonitorPage />} />
         <Route path="/admin/field-collection/issue-notes/:id" element={<IssueNoteDetailPage />} />
         <Route path="/admin/field-collection/transfers" element={<TransferNotesPage />} />
         <Route path="/admin/field-collection/transfers/:id" element={<TransferNoteDetailPage />} />

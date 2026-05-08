@@ -43,7 +43,8 @@ const pageTitles: Record<string, string> = {
   "/admin/employees": "Employees",
   "/admin/centers": "Centers",
   "/admin/system-cans": "System Cans",
-  "/admin/field-collection": "Field Collection"
+  "/admin/field-collection": "Field Collection",
+  "/admin/field-monitor": "Field Monitor"
 };
 
 function Sidebar({ open, currentPath, onClose }: { open: boolean; currentPath: string; onClose: () => void }) {

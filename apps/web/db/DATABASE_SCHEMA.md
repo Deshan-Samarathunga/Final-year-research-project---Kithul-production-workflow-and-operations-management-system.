@@ -124,3 +124,17 @@ Stores empty-can rows inside a transfer note.
 - `canCode` - system can code
 - `deletedAt` - soft-delete timestamp from offline sync
 - `createdAt`, `updatedAt` - audit timestamps
+
+### MobileSyncEvent
+
+Stores each mobile sync attempt received by the web server for admin monitoring.
+
+- `id` - primary key
+- `employeeId` - optional foreign key to the field collector employee
+- `status` - `Success` or `Failed`
+- `issueNoteCount` - number of issue notes received in the sync payload
+- `issueNoteItemCount` - number of issue note can rows received
+- `transferNoteCount` - number of transfer notes received
+- `transferNoteItemCount` - number of transfer note can rows received
+- `errorMessage` - failure message when sync could not complete
+- `startedAt`, `completedAt` - sync attempt timestamps

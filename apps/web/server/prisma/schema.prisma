@@ -27,6 +27,7 @@ model Employee {
   defaultLogin Boolean  @default(false)
   issueNotes   IssueNote[]
   transferNotes TransferNote[]
+  mobileSyncEvents MobileSyncEvent[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
@@ -138,4 +139,22 @@ model TransferNoteItem {
   updatedAt           DateTime     @updatedAt
 
   @@index([transferNoteId])
+}
+
+model MobileSyncEvent {
+  id                    Int       @id @default(autoincrement())
+  employeeId            Int?
+  employee              Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  status                String
+  issueNoteCount        Int       @default(0)
+  issueNoteItemCount    Int       @default(0)
+  transferNoteCount     Int       @default(0)
+  transferNoteItemCount Int       @default(0)
+  errorMessage          String?
+  startedAt             DateTime  @default(now())
+  completedAt           DateTime?
+
+  @@index([employeeId])
+  @@index([status])
+  @@index([startedAt])
 }

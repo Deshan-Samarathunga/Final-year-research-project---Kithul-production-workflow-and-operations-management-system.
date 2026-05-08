@@ -7,6 +7,7 @@ export const queryKeys = {
   systemCans: (page: number, pageSize: number, search: string, filters = "") =>
     ["system-cans", page, pageSize, search, filters] as const,
   canHistory: (id: number) => ["system-cans", id, "history"] as const,
+  fieldMonitor: ["field-monitor"] as const,
   issueNotes: (status: string, page: number, pageSize: number, search: string) =>
     ["issue-notes", status, page, pageSize, search] as const
 };
