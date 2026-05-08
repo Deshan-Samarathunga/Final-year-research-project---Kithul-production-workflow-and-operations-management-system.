@@ -20,7 +20,7 @@ export function Pagination({
   const end = Math.min(page * pageSize, total);
 
   return (
-    <div className="mt-auto flex min-h-[58px] flex-wrap items-center justify-between gap-3 border-t border-slate-200 px-3 py-3 text-sm text-slate-700">
+    <div className="mt-auto flex min-h-[58px] shrink-0 flex-wrap items-center justify-between gap-3 border-t border-slate-200 px-3 py-3 text-sm text-slate-700">
       <div className="flex items-center gap-3">
         <select
           className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm"

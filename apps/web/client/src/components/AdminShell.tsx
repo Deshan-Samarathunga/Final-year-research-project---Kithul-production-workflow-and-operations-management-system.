@@ -2,13 +2,11 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   Building2,
   ClipboardCheck,
-  ClipboardList,
   LayoutDashboard,
   LogOut,
   Menu,
   Settings,
-  Users,
-  X
+  Users
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -126,7 +124,6 @@ export function AdminShell({ displayName = "Admin User" }: { displayName?: strin
     }
   });
   const title = pageTitles[location.pathname] ?? "Administration";
-  const isField = location.pathname === "/admin/field-collection";
 
   return (
     <div className="h-screen overflow-hidden bg-slate-100 text-slate-950">
@@ -161,9 +158,9 @@ export function AdminShell({ displayName = "Admin User" }: { displayName?: strin
           <Button
             type="button"
             variant="secondary"
-            className={`h-10 w-10 px-0 ${isField ? "border-emerald-300 bg-emerald-50 text-emerald-700" : "border-blue-300 bg-blue-100 text-blue-700"}`}
+            className="h-10 w-10 border-blue-300 bg-blue-100 px-0 text-blue-700"
             aria-label="Settings"
-            icon={isField ? <ClipboardList className="h-6 w-6" /> : <Settings className="h-6 w-6" />}
+            icon={<Settings className="h-6 w-6" />}
           />
           <Button
             type="button"
@@ -180,18 +177,9 @@ export function AdminShell({ displayName = "Admin User" }: { displayName?: strin
         <button className="fixed inset-0 z-20 bg-slate-900/20 lg:hidden" aria-label="Close sidebar" onClick={() => setSidebarOpen(false)} />
       ) : null}
 
-      <main className={`flex h-[calc(100vh-32px)] gap-4 overflow-hidden px-4 pb-4 pt-[72px] ${isField ? "lg:block" : ""}`}>
-        {!isField ? <Sidebar open={sidebarOpen} currentPath={location.pathname} onClose={() => setSidebarOpen(false)} /> : null}
+      <main className="flex h-[calc(100vh-32px)] gap-4 overflow-hidden px-4 pb-4 pt-[72px]">
+        <Sidebar open={sidebarOpen} currentPath={location.pathname} onClose={() => setSidebarOpen(false)} />
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          {sidebarOpen && isField ? (
-            <Button
-              type="button"
-              variant="ghost"
-              className="fixed right-4 top-16 z-50 h-9 w-9 px-0 lg:hidden"
-              onClick={() => setSidebarOpen(false)}
-              icon={<X className="h-5 w-5" />}
-            />
-          ) : null}
           <Outlet />
         </div>
       </main>
