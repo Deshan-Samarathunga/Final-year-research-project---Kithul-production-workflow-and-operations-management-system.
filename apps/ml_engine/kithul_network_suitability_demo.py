@@ -9,8 +9,8 @@ Original file is located at
 
 import pandas as pd
 
-network_df = pd.read_csv("/content/network_measurements.csv")
-areas_df = pd.read_csv("/content/kithul_areas.csv")
+network_df = pd.read_csv("network_measurements.csv")
+areas_df = pd.read_csv("kithul_areas.csv")
 
 print("Network dataset:")
 display(network_df)
@@ -194,7 +194,7 @@ y = network_df["network_suitability"]
 model = RandomForestClassifier(
     n_estimators=100,
     random_state=42
-)-
+)
 
 model.fit(X, y)
 
