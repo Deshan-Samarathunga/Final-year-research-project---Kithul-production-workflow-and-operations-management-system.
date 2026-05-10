@@ -88,6 +88,7 @@ class IssueNoteItems extends Table {
   RealColumn get quantity => real()();
   RealColumn get phValue => real().withDefault(const Constant(0))();
   RealColumn get brixValue => real().withDefault(const Constant(0))();
+  RealColumn get temperatureC => real().nullable()();
   TextColumn get syncStatus =>
       text().withDefault(const Constant(SyncStatus.pendingCreate))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
@@ -168,7 +169,7 @@ final class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -180,6 +181,12 @@ final class AppDatabase extends _$AppDatabase {
       if (from < 3) {
         await migrator.addColumn(issueNoteItems, issueNoteItems.phValue);
         await migrator.addColumn(issueNoteItems, issueNoteItems.brixValue);
+      }
+      if (from < 4) {
+        await migrator.addColumn(
+          issueNoteItems,
+          issueNoteItems.temperatureC,
+        );
       }
     },
   );

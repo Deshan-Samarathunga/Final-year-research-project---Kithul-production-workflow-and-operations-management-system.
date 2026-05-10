@@ -96,6 +96,7 @@ Stores can quantity rows inside an issue note.
 - `quantity` - collected quantity for that can
 - `phValue` - pH reading captured for the can
 - `brixValue` - Brix reading captured for the can
+- `temperatureC` - temperature reading in Celsius for sap spoilage research
 - `deletedAt` - soft-delete timestamp from offline sync
 - `createdAt`, `updatedAt` - audit timestamps
 

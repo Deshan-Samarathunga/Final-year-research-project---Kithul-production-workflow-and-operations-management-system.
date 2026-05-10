@@ -2,7 +2,7 @@ import { Router } from "express";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../db.js";
-import { asyncHandler, pagination } from "../utils/http.js";
+import { asyncHandler, AppError, pagination } from "../utils/http.js";
 
 const router = Router();
 
@@ -26,6 +26,38 @@ const updateIssueNoteSchema = z
     totalQty: z.number().min(0).optional()
   })
   .refine((value) => Object.keys(value).length > 0, "At least one field is required");
+
+const transferNoteSchema = z.object({
+  transferNoteNo: z.string().trim().min(2).max(120),
+  transferDate: z.coerce.date(),
+  centerId: z.number().int().positive()
+});
+
+const updateTransferNoteSchema = z
+  .object({
+    transferNoteNo: z.string().trim().min(2).max(120).optional(),
+    transferDate: z.coerce.date().optional(),
+    centerId: z.number().int().positive().optional(),
+    status: z.enum(issueNoteStatuses).optional(),
+    canCount: z.number().int().min(0).optional()
+  })
+  .refine((value) => Object.keys(value).length > 0, "At least one field is required");
+
+const transferNoteItemSchema = z.object({
+  canCode: z
+    .string()
+    .trim()
+    .min(2)
+    .max(40)
+    .transform((value) => value.toUpperCase())
+});
+
+const issueNoteItemSchema = transferNoteItemSchema.extend({
+  quantity: z.coerce.number().positive(),
+  phValue: z.coerce.number().min(0),
+  brixValue: z.coerce.number().min(0),
+  temperatureC: z.coerce.number().min(0).optional().nullable()
+});
 
 const mobileIssueWhere: Prisma.IssueNoteWhereInput = {
   deletedAt: null,
@@ -288,6 +320,86 @@ router.patch(
   })
 );
 
+router.post(
+  "/issue-notes/:id/items",
+  asyncHandler(async (request, response) => {
+    const id = Number(request.params.id);
+    const payload = issueNoteItemSchema.parse(request.body);
+    const issueNote = await prisma.$transaction(async (tx) => {
+      const existing = await tx.issueNote.findFirst({ where: { id, deletedAt: null } });
+
+      if (!existing) {
+        throw new AppError(404, "Issue note not found");
+      }
+
+      if (existing.status !== "Active") {
+        throw new AppError(400, "Only active issue notes can be edited");
+      }
+
+      const systemCan = await tx.systemCan.findUnique({ where: { canCode: payload.canCode } });
+
+      if (!systemCan) {
+        throw new AppError(400, "Only registered system cans can be added");
+      }
+
+      if (systemCan.status !== "In warehouse") {
+        throw new AppError(400, "Only in-warehouse system cans can be added");
+      }
+
+      if (existing.type === "Sap" && payload.temperatureC == null) {
+        throw new AppError(400, "Temperature is required for Sap issue notes");
+      }
+
+      await tx.issueNoteItem.create({
+        data: {
+          issueNoteId: id,
+          canCode: payload.canCode,
+          quantity: payload.quantity,
+          phValue: payload.phValue,
+          brixValue: payload.brixValue,
+          temperatureC: payload.temperatureC ?? null
+        }
+      });
+
+      return refreshIssueTotals(tx, id);
+    });
+
+    response.status(201).json(issueNote);
+  })
+);
+
+router.delete(
+  "/issue-notes/:id/items/:itemId",
+  asyncHandler(async (request, response) => {
+    const id = Number(request.params.id);
+    const itemId = Number(request.params.itemId);
+    await prisma.$transaction(async (tx) => {
+      const existing = await tx.issueNote.findFirst({ where: { id, deletedAt: null } });
+
+      if (!existing) {
+        throw new AppError(404, "Issue note not found");
+      }
+
+      if (existing.status !== "Active") {
+        throw new AppError(400, "Only active issue notes can be edited");
+      }
+
+      const deleted = await tx.issueNoteItem.updateMany({
+        where: { id: itemId, issueNoteId: id, deletedAt: null },
+        data: { deletedAt: new Date() }
+      });
+
+      if (deleted.count === 0) {
+        throw new AppError(404, "Issue can not found");
+      }
+
+      await refreshIssueTotals(tx, id);
+    });
+
+    response.status(204).send();
+  })
+);
+
 router.get(
   "/transfer-notes",
   asyncHandler(async (request, response) => {
@@ -342,6 +454,23 @@ router.get(
   })
 );
 
+router.post(
+  "/transfer-notes",
+  asyncHandler(async (request, response) => {
+    const payload = transferNoteSchema.parse(request.body);
+    const transferNote = await prisma.transferNote.create({
+      data: {
+        ...payload,
+        status: "Active",
+        canCount: 0
+      },
+      include: { center: true, items: { where: { deletedAt: null }, orderBy: { createdAt: "asc" } } }
+    });
+
+    response.status(201).json(transferNote);
+  })
+);
+
 router.get(
   "/transfer-notes/:id",
   asyncHandler(async (request, response) => {
@@ -358,5 +487,125 @@ router.get(
     response.json(transferNote);
   })
 );
+
+router.patch(
+  "/transfer-notes/:id",
+  asyncHandler(async (request, response) => {
+    const id = Number(request.params.id);
+    const payload = updateTransferNoteSchema.parse(request.body);
+    const existing = await prisma.transferNote.findFirst({ where: { id, deletedAt: null } });
+
+    if (!existing) {
+      throw new AppError(404, "Transfer note not found");
+    }
+
+    const transferNote = await prisma.transferNote.update({
+      where: { id },
+      data: payload,
+      include: { center: true, items: { where: { deletedAt: null }, orderBy: { createdAt: "asc" } } }
+    });
+
+    response.json(transferNote);
+  })
+);
+
+router.post(
+  "/transfer-notes/:id/items",
+  asyncHandler(async (request, response) => {
+    const id = Number(request.params.id);
+    const payload = transferNoteItemSchema.parse(request.body);
+    const transferNote = await prisma.$transaction(async (tx) => {
+      const existing = await tx.transferNote.findFirst({ where: { id, deletedAt: null } });
+
+      if (!existing) {
+        throw new AppError(404, "Transfer note not found");
+      }
+
+      if (existing.status !== "Active") {
+        throw new AppError(400, "Only active transfer notes can be edited");
+      }
+
+      const systemCan = await tx.systemCan.findUnique({ where: { canCode: payload.canCode } });
+
+      if (!systemCan) {
+        throw new AppError(400, "Only registered system cans can be added");
+      }
+
+      if (systemCan.status !== "In warehouse") {
+        throw new AppError(400, "Only in-warehouse system cans can be added");
+      }
+
+      await tx.transferNoteItem.create({
+        data: {
+          transferNoteId: id,
+          canCode: payload.canCode
+        }
+      });
+
+      return refreshTransferCount(tx, id);
+    });
+
+    response.status(201).json(transferNote);
+  })
+);
+
+router.delete(
+  "/transfer-notes/:id/items/:itemId",
+  asyncHandler(async (request, response) => {
+    const id = Number(request.params.id);
+    const itemId = Number(request.params.itemId);
+    await prisma.$transaction(async (tx) => {
+      const existing = await tx.transferNote.findFirst({ where: { id, deletedAt: null } });
+
+      if (!existing) {
+        throw new AppError(404, "Transfer note not found");
+      }
+
+      if (existing.status !== "Active") {
+        throw new AppError(400, "Only active transfer notes can be edited");
+      }
+
+      const deleted = await tx.transferNoteItem.updateMany({
+        where: { id: itemId, transferNoteId: id, deletedAt: null },
+        data: { deletedAt: new Date() }
+      });
+
+      if (deleted.count === 0) {
+        throw new AppError(404, "Transfer can not found");
+      }
+
+      await refreshTransferCount(tx, id);
+    });
+
+    response.status(204).send();
+  })
+);
+
+async function refreshTransferCount(tx: Prisma.TransactionClient, transferNoteId: number) {
+  const count = await tx.transferNoteItem.count({
+    where: { transferNoteId, deletedAt: null }
+  });
+
+  return tx.transferNote.update({
+    where: { id: transferNoteId },
+    data: { canCount: count },
+    include: { center: true, items: { where: { deletedAt: null }, orderBy: { createdAt: "asc" } } }
+  });
+}
+
+async function refreshIssueTotals(tx: Prisma.TransactionClient, issueNoteId: number) {
+  const items = await tx.issueNoteItem.findMany({
+    where: { issueNoteId, deletedAt: null }
+  });
+
+  return tx.issueNote.update({
+    where: { id: issueNoteId },
+    data: {
+      canCount: items.length,
+      totalQty: items.reduce((sum, item) => sum + item.quantity, 0)
+    },
+    include: { center: true, items: { where: { deletedAt: null }, orderBy: { createdAt: "asc" } } }
+  });
+}
 
 export { router as fieldCollectionRouter };

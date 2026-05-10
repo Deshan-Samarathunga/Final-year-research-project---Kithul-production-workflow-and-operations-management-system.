@@ -134,6 +134,7 @@ export type IssueNoteItem = {
   quantity: number;
   phValue: number;
   brixValue: number;
+  temperatureC: number | null;
   deletedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -382,6 +383,10 @@ export const fieldCollectionApi = {
   detail: (id: number) => api<IssueNote>(`/api/field-collection/issue-notes/${id}`),
   update: (id: number, payload: Partial<IssueNote>) =>
     api<IssueNote>(`/api/field-collection/issue-notes/${id}`, { method: "PATCH", json: payload }),
+  addIssueCan: (id: number, payload: { canCode: string; quantity: number; phValue: number; brixValue: number; temperatureC?: number | null }) =>
+    api<IssueNote>(`/api/field-collection/issue-notes/${id}/items`, { method: "POST", json: payload }),
+  removeIssueCan: (id: number, itemId: number) =>
+    api<void>(`/api/field-collection/issue-notes/${id}/items/${itemId}`, { method: "DELETE" }),
   transfers: (params: { status: "Active" | "Completed"; page: number; pageSize: number; search?: string; filters?: TransferNoteFilters }) => {
     const query = new URLSearchParams({
       status: params.status,
@@ -392,5 +397,13 @@ export const fieldCollectionApi = {
     });
     return api<TransferNoteResponse>(`/api/field-collection/transfer-notes?${query}`);
   },
-  transferDetail: (id: number) => api<TransferNote>(`/api/field-collection/transfer-notes/${id}`)
+  createTransfer: (payload: { transferNoteNo: string; transferDate: string; centerId: number }) =>
+    api<TransferNote>("/api/field-collection/transfer-notes", { method: "POST", json: payload }),
+  transferDetail: (id: number) => api<TransferNote>(`/api/field-collection/transfer-notes/${id}`),
+  updateTransfer: (id: number, payload: Partial<Pick<TransferNote, "transferNoteNo" | "transferDate" | "centerId" | "status">>) =>
+    api<TransferNote>(`/api/field-collection/transfer-notes/${id}`, { method: "PATCH", json: payload }),
+  addTransferCan: (id: number, payload: { canCode: string }) =>
+    api<TransferNote>(`/api/field-collection/transfer-notes/${id}/items`, { method: "POST", json: payload }),
+  removeTransferCan: (id: number, itemId: number) =>
+    api<void>(`/api/field-collection/transfer-notes/${id}/items/${itemId}`, { method: "DELETE" })
 };

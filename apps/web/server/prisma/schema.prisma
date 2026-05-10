@@ -101,6 +101,7 @@ model IssueNoteItem {
   quantity          Float
   phValue           Float     @default(0)
   brixValue         Float     @default(0)
+  temperatureC      Float?
   deletedAt         DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
