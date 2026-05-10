@@ -1,13 +1,19 @@
 import { FormEvent, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, CheckCircle2, Plus, Search, Trash2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ClipboardCheck, Plus, RotateCcw, Search, Trash2 } from "lucide-react";
 import { fieldCollectionApi, systemCansApi, type IssueNoteItem, type SystemCan, type TransferNoteItem } from "../api/client";
 import { queryKeys } from "../api/queryKeys";
 import { Button } from "../components/Button";
 import { DataTable, type Column } from "../components/Table";
 import { PagePanel } from "../components/PagePanel";
 import { formatDate } from "../utils/format";
+
+const sapQualityWarningLimits = {
+  ph: { min: 5.5, max: 6.5 },
+  brix: { min: 9.5, max: 12 },
+  temperatureC: { min: 4, max: 35 }
+};
 
 export function IssueNoteDetailPage() {
   const id = Number(useParams().id);
@@ -20,6 +26,13 @@ export function IssueNoteDetailPage() {
   const [brixValue, setBrixValue] = useState("");
   const [temperatureC, setTemperatureC] = useState("");
   const [error, setError] = useState("");
+  const [qualityItemId, setQualityItemId] = useState<number | null>(null);
+  const [qualityPh, setQualityPh] = useState("");
+  const [qualityBrix, setQualityBrix] = useState("");
+  const [qualityTemperature, setQualityTemperature] = useState("");
+  const [qualityDecision, setQualityDecision] = useState<"Accepted" | "Spoiled">("Accepted");
+  const [qualityReason, setQualityReason] = useState("");
+  const [qualityError, setQualityError] = useState("");
   const { data, isLoading } = useQuery({
     queryKey: ["issue-note", id],
     queryFn: () => fieldCollectionApi.detail(id),
@@ -60,8 +73,30 @@ export function IssueNoteDetailPage() {
     onSuccess: invalidateIssue,
     onError: (mutationError: Error) => setError(mutationError.message)
   });
+  const createQualityCheck = useMutation({
+    mutationFn: () =>
+      fieldCollectionApi.createQualityCheck(qualityItemId ?? 0, {
+        phValue: Number(qualityPh),
+        brixValue: Number(qualityBrix),
+        temperatureC: Number(qualityTemperature),
+        decision: qualityDecision,
+        reason: qualityReason.trim() || null
+      }),
+    onSuccess: () => {
+      setQualityItemId(null);
+      setQualityReason("");
+      invalidateIssue();
+    },
+    onError: (mutationError: Error) => setQualityError(mutationError.message)
+  });
+  const returnCan = useMutation({
+    mutationFn: (itemId: number) => fieldCollectionApi.returnIssueCan(itemId),
+    onSuccess: invalidateIssue,
+    onError: (mutationError: Error) => setError(mutationError.message)
+  });
   const canEdit = data?.status === "Active";
   const isSapIssue = data?.type === "Sap";
+  const selectedQualityItem = (data?.items ?? []).find((item) => item.id === qualityItemId) ?? null;
   const selectedCanCodes = new Set((data?.items ?? []).map((item) => item.canCode));
   const allSystemCans = systemCans?.data ?? [];
   const addableSystemCans = allSystemCans.filter((can) => can.status === "In warehouse" && !selectedCanCodes.has(can.canCode));
@@ -90,6 +125,14 @@ export function IssueNoteDetailPage() {
           }
         ]
       : []),
+    ...(isSapIssue
+      ? [
+          {
+            header: "Processing",
+            accessor: (row: IssueNoteItem) => <ProcessingStatus item={row} />
+          }
+        ]
+      : []),
     ...(canEdit
       ? [
           {
@@ -112,6 +155,46 @@ export function IssueNoteDetailPage() {
           }
         ]
       : [])
+      .concat(
+        isSapIssue
+          ? [
+              {
+                header: "Quality Check",
+                align: "right" as const,
+                accessor: (row: IssueNoteItem) => (
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => {
+                        setError("");
+                        setQualityError("");
+                        openQualityCheck(row);
+                      }}
+                      icon={<ClipboardCheck className="h-4 w-4" />}
+                    >
+                      Check
+                    </Button>
+                    {row.processingStatus === "Spoiled" ? (
+                      <Button
+                        type="button"
+                        variant="danger"
+                        disabled={returnCan.isPending}
+                        onClick={() => {
+                          setError("");
+                          returnCan.mutate(row.id);
+                        }}
+                        icon={<RotateCcw className="h-4 w-4" />}
+                      >
+                        Mark returned
+                      </Button>
+                    ) : null}
+                  </div>
+                )
+              }
+            ]
+          : []
+      )
   ];
 
   function submitCan(event: FormEvent<HTMLFormElement>) {
@@ -133,6 +216,45 @@ export function IssueNoteDetailPage() {
     setCanSearch(`${can.canCode} - ${can.status}`);
     setCanDropdownOpen(false);
     setError("");
+  }
+
+  function openQualityCheck(item: IssueNoteItem) {
+    const latestCheck = item.processingQualityChecks?.[0];
+    setQualityItemId(item.id);
+    setQualityPh(String(latestCheck?.phValue ?? item.phValue));
+    setQualityBrix(String(latestCheck?.brixValue ?? item.brixValue));
+    setQualityTemperature(String(latestCheck?.temperatureC ?? item.temperatureC ?? ""));
+    setQualityDecision(latestCheck?.decision ?? "Accepted");
+    setQualityReason(latestCheck?.reason ?? "");
+  }
+
+  function qualityWarnings() {
+    const ph = Number(qualityPh);
+    const brix = Number(qualityBrix);
+    const temperature = Number(qualityTemperature);
+    const warnings = [
+      Number.isFinite(ph) && (ph < sapQualityWarningLimits.ph.min || ph > sapQualityWarningLimits.ph.max)
+        ? `pH outside ${sapQualityWarningLimits.ph.min}-${sapQualityWarningLimits.ph.max}`
+        : "",
+      Number.isFinite(brix) && (brix < sapQualityWarningLimits.brix.min || brix > sapQualityWarningLimits.brix.max)
+        ? `Brix outside ${sapQualityWarningLimits.brix.min}-${sapQualityWarningLimits.brix.max}`
+        : "",
+      Number.isFinite(temperature) &&
+      (temperature < sapQualityWarningLimits.temperatureC.min || temperature > sapQualityWarningLimits.temperatureC.max)
+        ? `Temperature outside ${sapQualityWarningLimits.temperatureC.min}-${sapQualityWarningLimits.temperatureC.max} C`
+        : ""
+    ].filter(Boolean);
+    return warnings;
+  }
+
+  function submitQualityCheck(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setQualityError("");
+    if (!qualityItemId) {
+      setQualityError("Select a can row to check");
+      return;
+    }
+    createQualityCheck.mutate();
   }
 
   return (
@@ -269,6 +391,84 @@ export function IssueNoteDetailPage() {
         </form>
       ) : error ? (
         <p className="border-b border-slate-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700">{error}</p>
+      ) : null}
+      {isSapIssue && selectedQualityItem ? (
+        <form className="grid gap-3 border-b border-slate-200 bg-white p-4 lg:grid-cols-[10rem_8rem_8rem_8rem_10rem_minmax(12rem,1fr)_auto]" onSubmit={submitQualityCheck}>
+          <div>
+            <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Quality can</div>
+            <div className="mt-2 text-sm font-black text-slate-950">{selectedQualityItem.canCode}</div>
+          </div>
+          <label className="text-sm font-medium text-slate-700">
+            pH
+            <input
+              className="mt-2 h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              value={qualityPh}
+              onChange={(event) => setQualityPh(event.target.value)}
+              type="number"
+              min="0"
+              step="0.01"
+              required
+            />
+          </label>
+          <label className="text-sm font-medium text-slate-700">
+            Brix
+            <input
+              className="mt-2 h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              value={qualityBrix}
+              onChange={(event) => setQualityBrix(event.target.value)}
+              type="number"
+              min="0"
+              step="0.01"
+              required
+            />
+          </label>
+          <label className="text-sm font-medium text-slate-700">
+            Temp (C)
+            <input
+              className="mt-2 h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              value={qualityTemperature}
+              onChange={(event) => setQualityTemperature(event.target.value)}
+              type="number"
+              min="0"
+              step="0.1"
+              required
+            />
+          </label>
+          <label className="text-sm font-medium text-slate-700">
+            Decision
+            <select
+              className="mt-2 h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              value={qualityDecision}
+              onChange={(event) => setQualityDecision(event.target.value as "Accepted" | "Spoiled")}
+            >
+              <option value="Accepted">Accepted</option>
+              <option value="Spoiled">Spoiled</option>
+            </select>
+          </label>
+          <label className="text-sm font-medium text-slate-700">
+            Reason
+            <input
+              className="mt-2 h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              value={qualityReason}
+              onChange={(event) => setQualityReason(event.target.value)}
+              placeholder={qualityDecision === "Spoiled" ? "Spoilage reason" : "Optional"}
+            />
+          </label>
+          <div className="flex items-end gap-2">
+            <Button type="submit" variant="primary" disabled={createQualityCheck.isPending} icon={<ClipboardCheck className="h-4 w-4" />}>
+              Save check
+            </Button>
+            <Button type="button" variant="ghost" onClick={() => setQualityItemId(null)}>
+              Cancel
+            </Button>
+          </div>
+          {qualityWarnings().length > 0 ? (
+            <p className="rounded-md bg-yellow-50 px-3 py-2 text-sm font-semibold text-yellow-800 lg:col-span-7">
+              Warning: {qualityWarnings().join("; ")}
+            </p>
+          ) : null}
+          {qualityError ? <p className="rounded-md bg-red-50 px-3 py-2 text-sm font-medium text-red-700 lg:col-span-7">{qualityError}</p> : null}
+        </form>
       ) : null}
       <DataTable
         columns={columns}
@@ -484,6 +684,34 @@ export function TransferNoteDetailPage() {
         }
       />
     </PagePanel>
+  );
+}
+
+function ProcessingStatus({ item }: { item: IssueNoteItem }) {
+  const latestCheck = item.processingQualityChecks?.[0];
+  const tone =
+    item.processingStatus === "Accepted"
+      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+      : item.processingStatus === "Spoiled"
+        ? "border-red-200 bg-red-50 text-red-700"
+        : item.processingStatus === "Returned"
+          ? "border-blue-200 bg-blue-50 text-blue-700"
+          : "border-slate-200 bg-slate-50 text-slate-600";
+
+  return (
+    <div className="min-w-40">
+      <span className={`inline-flex rounded-md border px-2 py-1 text-xs font-black uppercase tracking-[0.12em] ${tone}`}>
+        {item.processingStatus ?? "Pending"}
+      </span>
+      {latestCheck ? (
+        <div className="mt-1 text-xs text-slate-500">
+          pH {latestCheck.phValue} / Brix {latestCheck.brixValue} / {latestCheck.temperatureC} C
+          {latestCheck.warningMessage ? <div className="font-semibold text-yellow-700">{latestCheck.warningMessage}</div> : null}
+        </div>
+      ) : (
+        <div className="mt-1 text-xs text-slate-500">No processing check</div>
+      )}
+    </div>
   );
 }
 

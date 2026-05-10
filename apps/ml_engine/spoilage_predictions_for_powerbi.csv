@@ -1,0 +1,4 @@
+Can_ID,Initial_pH,Initial_Brix,Temperature,Predicted_Spoilage_Hours,Risk_Category
+AR001,6.1,11.0,30,11.8,Low Risk
+AR002,5.8,10.0,32,6.66,High Risk
+AR003,6.5,12.0,5,39.47,Low Risk

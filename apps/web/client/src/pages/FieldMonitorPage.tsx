@@ -198,11 +198,12 @@ function CanRowsTable({ rows }: { rows: CanRow[] }) {
           <th className="border-b border-slate-200 px-4 py-2 text-right">pH</th>
           <th className="border-b border-slate-200 px-4 py-2 text-right">Brix</th>
           <th className="border-b border-slate-200 px-4 py-2 text-right">Temp (C)</th>
+          <th className="border-b border-slate-200 px-4 py-2 text-left">Processing</th>
           <th className="border-b border-slate-200 px-4 py-2 text-left">Collector</th>
         </tr>
       </thead>
       <tbody>
-        {rows.length === 0 ? <EmptyRow colSpan={7} text="No received can rows yet" /> : null}
+        {rows.length === 0 ? <EmptyRow colSpan={8} text="No received can rows yet" /> : null}
         {rows.map((row) => (
           <tr key={row.id} className="border-b border-slate-200 last:border-b-0">
             <td className="whitespace-nowrap px-4 py-3 font-semibold">{row.issueNote.issueNoteName}</td>
@@ -211,6 +212,7 @@ function CanRowsTable({ rows }: { rows: CanRow[] }) {
             <td className="px-4 py-3 text-right">{numberFormat.format(row.phValue)}</td>
             <td className="px-4 py-3 text-right">{numberFormat.format(row.brixValue)}</td>
             <td className="px-4 py-3 text-right">{row.temperatureC == null ? "-" : numberFormat.format(row.temperatureC)}</td>
+            <td className="whitespace-nowrap px-4 py-3">{row.processingStatus ?? "Pending"}</td>
             <td className="whitespace-nowrap px-4 py-3">{collectorName(row.issueNote)}</td>
           </tr>
         ))}

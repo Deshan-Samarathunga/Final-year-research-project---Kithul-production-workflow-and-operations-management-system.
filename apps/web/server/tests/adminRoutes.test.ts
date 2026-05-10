@@ -14,7 +14,8 @@ const mockPrisma = {
     create: vi.fn()
   },
   systemCan: {
-    findUnique: vi.fn()
+    findUnique: vi.fn(),
+    update: vi.fn()
   },
   issueNote: {
     create: vi.fn(),
@@ -23,8 +24,14 @@ const mockPrisma = {
   },
   issueNoteItem: {
     create: vi.fn(),
+    findFirst: vi.fn(),
     findMany: vi.fn(),
+    update: vi.fn(),
     updateMany: vi.fn()
+  },
+  processingQualityCheck: {
+    create: vi.fn(),
+    findMany: vi.fn()
   },
   transferNote: {
     create: vi.fn(),
@@ -216,7 +223,8 @@ describe("admin CRUD routes", () => {
         quantity: 12.5,
         phValue: 6.2,
         brixValue: 14.8,
-        temperatureC: 30
+        temperatureC: 30,
+        processingStatus: "Pending"
       }
     });
   });
@@ -288,6 +296,155 @@ describe("admin CRUD routes", () => {
         temperatureC: null
       })
     });
+  });
+
+  it("records a Sap processing quality check and warning status", async () => {
+    const checkedAt = new Date("2026-05-10T08:00:00.000Z");
+    mockPrisma.issueNoteItem.findFirst.mockResolvedValue({
+      id: 91,
+      issueNoteId: 20,
+      canCode: "AR001",
+      processingStatus: "Pending",
+      issueNote: { id: 20, type: "Sap" }
+    });
+    mockPrisma.processingQualityCheck.create.mockResolvedValue({
+      id: 7,
+      issueNoteItemId: 91,
+      phValue: 4.8,
+      brixValue: 8.5,
+      temperatureC: 30,
+      decision: "Accepted",
+      phWarning: true,
+      brixWarning: true,
+      temperatureWarning: false,
+      warningMessage: "pH outside 5.5-6.5; Brix outside 9.5-12",
+      checkedAt
+    });
+    mockPrisma.issueNoteItem.update.mockResolvedValue({ id: 91, processingStatus: "Accepted" });
+
+    const response = await authed(
+      request(app).post("/api/field-collection/issue-note-items/91/quality-checks").send({
+        phValue: 4.8,
+        brixValue: 8.5,
+        temperatureC: 30,
+        decision: "Accepted",
+        reason: "Accepted manually"
+      })
+    );
+
+    expect(response.status).toBe(201);
+    expect(mockPrisma.processingQualityCheck.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        issueNoteItemId: 91,
+        decision: "Accepted",
+        phWarning: true,
+        brixWarning: true,
+        temperatureWarning: false
+      })
+    });
+    expect(mockPrisma.issueNoteItem.update).toHaveBeenCalledWith({
+      where: { id: 91 },
+      data: { processingStatus: "Accepted" }
+    });
+  });
+
+  it("rejects processing quality checks for non-Sap issue note cans", async () => {
+    mockPrisma.issueNoteItem.findFirst.mockResolvedValue({
+      id: 92,
+      issueNoteId: 20,
+      canCode: "AR002",
+      issueNote: { id: 20, type: "Treacle" }
+    });
+
+    const response = await authed(
+      request(app).post("/api/field-collection/issue-note-items/92/quality-checks").send({
+        phValue: 6,
+        brixValue: 10,
+        temperatureC: 25,
+        decision: "Accepted"
+      })
+    );
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toBe("Processing quality checks are only available for Sap issue notes");
+    expect(mockPrisma.processingQualityCheck.create).not.toHaveBeenCalled();
+  });
+
+  it("marks a spoiled Sap can row as returned and updates can history", async () => {
+    mockPrisma.issueNoteItem.findFirst.mockResolvedValue({
+      id: 91,
+      issueNoteId: 20,
+      canCode: "AR001",
+      processingStatus: "Spoiled",
+      issueNote: {
+        id: 20,
+        issueNoteName: "Morning collection",
+        type: "Sap",
+        center: { agent: "Test Agent" }
+      }
+    });
+    mockPrisma.systemCan.findUnique.mockResolvedValue({ id: 1, canCode: "AR001", status: "Dispatched" });
+    mockPrisma.systemCan.update.mockResolvedValue({ id: 1, canCode: "AR001", status: "In warehouse" });
+    mockPrisma.issueNoteItem.update.mockResolvedValue({ id: 91, processingStatus: "Returned" });
+
+    const response = await authed(request(app).post("/api/field-collection/issue-note-items/91/return"));
+
+    expect(response.status).toBe(200);
+    expect(mockPrisma.systemCan.update).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: expect.objectContaining({
+        status: "In warehouse",
+        histories: expect.objectContaining({
+          create: expect.objectContaining({ note: "Returned after spoiled processing quality check" })
+        })
+      })
+    });
+    expect(mockPrisma.issueNoteItem.update).toHaveBeenCalledWith({
+      where: { id: 91 },
+      data: { processingStatus: "Returned" },
+      include: expect.any(Object)
+    });
+  });
+
+  it("exports processing quality checks for research CSV", async () => {
+    mockPrisma.processingQualityCheck.findMany.mockResolvedValue([
+      {
+        id: 7,
+        phValue: 4.8,
+        brixValue: 8.5,
+        temperatureC: 30,
+        decision: "Spoiled",
+        reason: "Low brix",
+        phWarning: true,
+        brixWarning: true,
+        temperatureWarning: false,
+        warningMessage: "pH outside 5.5-6.5; Brix outside 9.5-12",
+        checkedAt: new Date("2026-05-10T08:00:00.000Z"),
+        issueNoteItem: {
+          canCode: "AR001",
+          quantity: 12.5,
+          phValue: 6.2,
+          brixValue: 10.5,
+          temperatureC: 28,
+          processingStatus: "Spoiled",
+          createdAt: new Date("2026-05-10T06:00:00.000Z"),
+          issueNote: {
+            id: 20,
+            issueNoteName: "Morning sap",
+            type: "Sap",
+            collectionDate: new Date("2026-05-10T00:00:00.000Z"),
+            center: { agent: "Test Agent" }
+          }
+        }
+      }
+    ]);
+
+    const response = await authed(request(app).get("/api/field-collection/research/spoilage-dataset.csv"));
+
+    expect(response.status).toBe(200);
+    expect(response.text).toContain("issueNoteId,issueNoteName");
+    expect(response.text).toContain("Morning sap");
+    expect(response.text).toContain("2.00");
   });
 
   it("rejects issue note cans that are not in warehouse", async () => {

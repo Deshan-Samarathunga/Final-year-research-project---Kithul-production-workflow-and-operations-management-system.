@@ -135,7 +135,26 @@ export type IssueNoteItem = {
   phValue: number;
   brixValue: number;
   temperatureC: number | null;
+  processingStatus?: "Pending" | "Accepted" | "Spoiled" | "Returned";
+  processingQualityChecks?: ProcessingQualityCheck[];
   deletedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ProcessingQualityCheck = {
+  id: number;
+  issueNoteItemId: number;
+  phValue: number;
+  brixValue: number;
+  temperatureC: number;
+  decision: "Accepted" | "Spoiled";
+  reason: string | null;
+  phWarning: boolean;
+  brixWarning: boolean;
+  temperatureWarning: boolean;
+  warningMessage: string | null;
+  checkedAt: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -387,6 +406,11 @@ export const fieldCollectionApi = {
     api<IssueNote>(`/api/field-collection/issue-notes/${id}/items`, { method: "POST", json: payload }),
   removeIssueCan: (id: number, itemId: number) =>
     api<void>(`/api/field-collection/issue-notes/${id}/items/${itemId}`, { method: "DELETE" }),
+  createQualityCheck: (
+    itemId: number,
+    payload: { phValue: number; brixValue: number; temperatureC: number; decision: "Accepted" | "Spoiled"; reason?: string | null }
+  ) => api<ProcessingQualityCheck>(`/api/field-collection/issue-note-items/${itemId}/quality-checks`, { method: "POST", json: payload }),
+  returnIssueCan: (itemId: number) => api<IssueNoteItem>(`/api/field-collection/issue-note-items/${itemId}/return`, { method: "POST" }),
   transfers: (params: { status: "Active" | "Completed"; page: number; pageSize: number; search?: string; filters?: TransferNoteFilters }) => {
     const query = new URLSearchParams({
       status: params.status,

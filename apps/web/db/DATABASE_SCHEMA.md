@@ -97,7 +97,22 @@ Stores can quantity rows inside an issue note.
 - `phValue` - pH reading captured for the can
 - `brixValue` - Brix reading captured for the can
 - `temperatureC` - temperature reading in Celsius for sap spoilage research
+- `processingStatus` - latest processing quality state: `Pending`, `Accepted`, `Spoiled`, or `Returned`
 - `deletedAt` - soft-delete timestamp from offline sync
+- `createdAt`, `updatedAt` - audit timestamps
+
+### ProcessingQualityCheck
+
+Stores processing-stage Sap quality checks for issue-note can rows.
+
+- `id` - primary key
+- `issueNoteItemId` - foreign key to `IssueNoteItem`
+- `phValue`, `brixValue`, `temperatureC` - before-processing measurements
+- `decision` - staff decision, `Accepted` or `Spoiled`
+- `reason` - optional note, usually used for spoiled sap
+- `phWarning`, `brixWarning`, `temperatureWarning` - warning flags based on configured ranges
+- `warningMessage` - combined warning message stored with the check
+- `checkedAt` - processing quality check time
 - `createdAt`, `updatedAt` - audit timestamps
 
 ### TransferNote
