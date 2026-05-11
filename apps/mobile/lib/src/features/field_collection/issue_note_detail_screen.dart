@@ -27,7 +27,6 @@ class _IssueNoteDetailScreenState extends ConsumerState<IssueNoteDetailScreen> {
   final _quantityController = TextEditingController();
   final _phController = TextEditingController();
   final _brixController = TextEditingController();
-  final _temperatureController = TextEditingController();
   late Future<IssueNoteView?> _noteFuture;
 
   @override
@@ -42,7 +41,6 @@ class _IssueNoteDetailScreenState extends ConsumerState<IssueNoteDetailScreen> {
     _quantityController.dispose();
     _phController.dispose();
     _brixController.dispose();
-    _temperatureController.dispose();
     super.dispose();
   }
 
@@ -92,8 +90,6 @@ class _IssueNoteDetailScreenState extends ConsumerState<IssueNoteDetailScreen> {
                   quantityController: _quantityController,
                   phController: _phController,
                   brixController: _brixController,
-                  temperatureController: _temperatureController,
-                  requireTemperature: note.type == ProductType.sap,
                   onScan: _scanCanCode,
                   onAdd: _addCan,
                 ),
@@ -171,15 +167,11 @@ class _IssueNoteDetailScreenState extends ConsumerState<IssueNoteDetailScreen> {
           quantity: double.parse(_quantityController.text),
           phValue: double.parse(_phController.text),
           brixValue: double.parse(_brixController.text),
-          temperatureC: _temperatureController.text.trim().isEmpty
-              ? null
-              : double.parse(_temperatureController.text),
         );
     _canController.clear();
     _quantityController.clear();
     _phController.clear();
     _brixController.clear();
-    _temperatureController.clear();
     unawaited(ref.read(mobileSyncServiceProvider).syncNow());
     setState(_reload);
   }
@@ -299,8 +291,6 @@ class _AddCanForm extends StatelessWidget {
     required this.quantityController,
     required this.phController,
     required this.brixController,
-    required this.temperatureController,
-    required this.requireTemperature,
     required this.onScan,
     required this.onAdd,
   });
@@ -310,8 +300,6 @@ class _AddCanForm extends StatelessWidget {
   final TextEditingController quantityController;
   final TextEditingController phController;
   final TextEditingController brixController;
-  final TextEditingController temperatureController;
-  final bool requireTemperature;
   final VoidCallback onScan;
   final VoidCallback onAdd;
 
@@ -414,29 +402,6 @@ class _AddCanForm extends StatelessWidget {
                   ),
                 ],
               ),
-              if (requireTemperature) ...[
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: temperatureController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                  ],
-                  decoration: const InputDecoration(
-                    labelText: 'Temperature (C)',
-                  ),
-                  validator: (value) {
-                    final temperature = double.tryParse(value ?? '');
-                    if (temperature == null) return 'Enter temperature';
-                    if (temperature < 0) {
-                      return 'Temperature must be 0 or more';
-                    }
-                    return null;
-                  },
-                ),
-              ],
               const SizedBox(height: 12),
               FilledButton.icon(
                 onPressed: onAdd,
@@ -489,7 +454,7 @@ class _CanList extends StatelessWidget {
                   style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
                 subtitle: Text(
-                  'Quantity ${quantityFormat.format(item.quantity)}  |  pH ${quantityFormat.format(item.phValue)}  |  Brix ${quantityFormat.format(item.brixValue)}${item.temperatureC == null ? '' : '  |  Temp ${quantityFormat.format(item.temperatureC!)}C'}',
+                  'Quantity ${quantityFormat.format(item.quantity)}  |  pH ${quantityFormat.format(item.phValue)}  |  Brix ${quantityFormat.format(item.brixValue)}',
                 ),
                 trailing: canEdit
                     ? IconButton(
