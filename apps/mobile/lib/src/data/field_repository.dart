@@ -337,6 +337,7 @@ class FieldCollectionRepository {
     required double quantity,
     required double phValue,
     required double brixValue,
+    double? temperatureC,
   }) async {
     final now = DateTime.now();
     final localId = _uuid.v4();
@@ -350,6 +351,7 @@ class FieldCollectionRepository {
             quantity: quantity,
             phValue: Value(phValue),
             brixValue: Value(brixValue),
+            temperatureC: Value(temperatureC),
             createdAt: Value(now),
             updatedAt: Value(now),
           ),

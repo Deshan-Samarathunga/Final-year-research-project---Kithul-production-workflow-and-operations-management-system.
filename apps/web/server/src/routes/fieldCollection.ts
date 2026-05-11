@@ -2,11 +2,17 @@ import { Router } from "express";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../db.js";
-import { asyncHandler, pagination } from "../utils/http.js";
+import { asyncHandler, AppError, pagination } from "../utils/http.js";
 
 const router = Router();
 
 const issueNoteStatuses = ["Active", "Completed"] as const;
+const qualityCheckDecisions = ["Accepted", "Spoiled"] as const;
+const sapQualityWarningLimits = {
+  ph: { min: 5.5, max: 6.5 },
+  brix: { min: 9.5, max: 12 },
+  temperatureC: { min: 4, max: 35 }
+};
 
 const issueNoteSchema = z.object({
   issueNoteName: z.string().trim().min(2).max(120),
@@ -26,6 +32,54 @@ const updateIssueNoteSchema = z
     totalQty: z.number().min(0).optional()
   })
   .refine((value) => Object.keys(value).length > 0, "At least one field is required");
+
+const transferNoteSchema = z.object({
+  transferNoteNo: z.string().trim().min(2).max(120),
+  transferDate: z.coerce.date(),
+  centerId: z.number().int().positive()
+});
+
+const updateTransferNoteSchema = z
+  .object({
+    transferNoteNo: z.string().trim().min(2).max(120).optional(),
+    transferDate: z.coerce.date().optional(),
+    centerId: z.number().int().positive().optional(),
+    status: z.enum(issueNoteStatuses).optional(),
+    canCount: z.number().int().min(0).optional()
+  })
+  .refine((value) => Object.keys(value).length > 0, "At least one field is required");
+
+const transferNoteItemSchema = z.object({
+  canCode: z
+    .string()
+    .trim()
+    .min(2)
+    .max(40)
+    .transform((value) => value.toUpperCase())
+});
+
+const issueNoteItemSchema = transferNoteItemSchema.extend({
+  quantity: z.coerce.number().positive(),
+  phValue: z.coerce.number().min(0),
+  brixValue: z.coerce.number().min(0),
+  temperatureC: z.coerce.number().min(0).optional().nullable()
+});
+
+const qualityCheckSchema = z.object({
+  phValue: z.coerce.number().min(0),
+  brixValue: z.coerce.number().min(0),
+  temperatureC: z.coerce.number().min(0),
+  decision: z.enum(qualityCheckDecisions),
+  reason: z.string().trim().max(240).optional().nullable(),
+  checkedAt: z.coerce.date().optional()
+});
+
+const latestQualityCheckInclude = {
+  processingQualityChecks: {
+    orderBy: { checkedAt: "desc" as const },
+    take: 1
+  }
+};
 
 const mobileIssueWhere: Prisma.IssueNoteWhereInput = {
   deletedAt: null,
@@ -128,7 +182,7 @@ router.get(
         include: {
           center: true,
           submittedByEmployee: true,
-          items: { where: { deletedAt: null }, orderBy: { createdAt: "desc" } }
+          items: { where: { deletedAt: null }, include: latestQualityCheckInclude, orderBy: { createdAt: "desc" } }
         },
         orderBy: { updatedAt: "desc" },
         take: 15
@@ -139,6 +193,7 @@ router.get(
           issueNote: { is: mobileIssueWhere }
         },
         include: {
+          ...latestQualityCheckInclude,
           issueNote: {
             include: {
               center: true,
@@ -181,6 +236,83 @@ router.get(
 );
 
 router.get(
+  "/research/spoilage-dataset.csv",
+  asyncHandler(async (_request, response) => {
+    const checks = await prisma.processingQualityCheck.findMany({
+      include: {
+        issueNoteItem: {
+          include: {
+            issueNote: {
+              include: { center: true }
+            }
+          }
+        }
+      },
+      orderBy: { checkedAt: "asc" }
+    });
+    const headers = [
+      "issueNoteId",
+      "issueNoteName",
+      "issueNoteType",
+      "collectionDate",
+      "centerAgent",
+      "canCode",
+      "quantity",
+      "initialPh",
+      "initialBrix",
+      "initialTemperatureC",
+      "initialMeasuredAt",
+      "processingPh",
+      "processingBrix",
+      "processingTemperatureC",
+      "decision",
+      "processingStatus",
+      "reason",
+      "phWarning",
+      "brixWarning",
+      "temperatureWarning",
+      "warningMessage",
+      "checkedAt",
+      "timeUntilCheckHours"
+    ];
+    const rows = checks.map((check) => {
+      const item = check.issueNoteItem;
+      const note = item.issueNote;
+      return [
+        note.id,
+        note.issueNoteName,
+        note.type,
+        csvDate(note.collectionDate),
+        note.center?.agent ?? "",
+        item.canCode,
+        item.quantity,
+        item.phValue,
+        item.brixValue,
+        item.temperatureC ?? "",
+        csvDate(item.createdAt),
+        check.phValue,
+        check.brixValue,
+        check.temperatureC,
+        check.decision,
+        item.processingStatus,
+        check.reason ?? "",
+        check.phWarning,
+        check.brixWarning,
+        check.temperatureWarning,
+        check.warningMessage ?? "",
+        csvDate(check.checkedAt),
+        hoursBetween(item.createdAt, check.checkedAt)
+      ];
+    });
+    const csv = [headers, ...rows].map((row) => row.map(csvCell).join(",")).join("\n");
+
+    response.setHeader("Content-Type", "text/csv; charset=utf-8");
+    response.setHeader("Content-Disposition", 'attachment; filename="spoilage-dataset.csv"');
+    response.send(`${csv}\n`);
+  })
+);
+
+router.get(
   "/issue-notes",
   asyncHandler(async (request, response) => {
     const { page, pageSize, skip, take } = pagination(request.query);
@@ -212,7 +344,7 @@ router.get(
     const [data, total, active, completed, typeCounts, agentRows] = await Promise.all([
       prisma.issueNote.findMany({
         where,
-        include: { center: true, items: { where: { deletedAt: null }, orderBy: { createdAt: "asc" } } },
+        include: { center: true, items: { where: { deletedAt: null }, include: latestQualityCheckInclude, orderBy: { createdAt: "asc" } } },
         orderBy: { collectionDate: "desc" },
         skip,
         take
@@ -288,6 +420,192 @@ router.patch(
   })
 );
 
+router.post(
+  "/issue-notes/:id/items",
+  asyncHandler(async (request, response) => {
+    const id = Number(request.params.id);
+    const payload = issueNoteItemSchema.parse(request.body);
+    const issueNote = await prisma.$transaction(async (tx) => {
+      const existing = await tx.issueNote.findFirst({ where: { id, deletedAt: null } });
+
+      if (!existing) {
+        throw new AppError(404, "Issue note not found");
+      }
+
+      if (existing.status !== "Active") {
+        throw new AppError(400, "Only active issue notes can be edited");
+      }
+
+      const systemCan = await tx.systemCan.findUnique({ where: { canCode: payload.canCode } });
+
+      if (!systemCan) {
+        throw new AppError(400, "Only registered system cans can be added");
+      }
+
+      if (systemCan.status !== "In warehouse") {
+        throw new AppError(400, "Only in-warehouse system cans can be added");
+      }
+
+      if (existing.type === "Sap" && payload.temperatureC == null) {
+        throw new AppError(400, "Temperature is required for Sap issue notes");
+      }
+
+      await tx.issueNoteItem.create({
+        data: {
+          issueNoteId: id,
+          canCode: payload.canCode,
+          quantity: payload.quantity,
+          phValue: payload.phValue,
+          brixValue: payload.brixValue,
+          temperatureC: payload.temperatureC ?? null,
+          processingStatus: "Pending"
+        }
+      });
+
+      return refreshIssueTotals(tx, id);
+    });
+
+    response.status(201).json(issueNote);
+  })
+);
+
+router.delete(
+  "/issue-notes/:id/items/:itemId",
+  asyncHandler(async (request, response) => {
+    const id = Number(request.params.id);
+    const itemId = Number(request.params.itemId);
+    await prisma.$transaction(async (tx) => {
+      const existing = await tx.issueNote.findFirst({ where: { id, deletedAt: null } });
+
+      if (!existing) {
+        throw new AppError(404, "Issue note not found");
+      }
+
+      if (existing.status !== "Active") {
+        throw new AppError(400, "Only active issue notes can be edited");
+      }
+
+      const deleted = await tx.issueNoteItem.updateMany({
+        where: { id: itemId, issueNoteId: id, deletedAt: null },
+        data: { deletedAt: new Date() }
+      });
+
+      if (deleted.count === 0) {
+        throw new AppError(404, "Issue can not found");
+      }
+
+      await refreshIssueTotals(tx, id);
+    });
+
+    response.status(204).send();
+  })
+);
+
+router.post(
+  "/issue-note-items/:itemId/quality-checks",
+  asyncHandler(async (request, response) => {
+    const itemId = Number(request.params.itemId);
+    const payload = qualityCheckSchema.parse(request.body);
+    const created = await prisma.$transaction(async (tx) => {
+      const item = await tx.issueNoteItem.findFirst({
+        where: { id: itemId, deletedAt: null },
+        include: { issueNote: true }
+      });
+
+      if (!item) {
+        throw new AppError(404, "Issue can not found");
+      }
+
+      if (item.issueNote.type !== "Sap") {
+        throw new AppError(400, "Processing quality checks are only available for Sap issue notes");
+      }
+
+      const warnings = qualityWarnings(payload);
+      const check = await tx.processingQualityCheck.create({
+        data: {
+          issueNoteItemId: itemId,
+          phValue: payload.phValue,
+          brixValue: payload.brixValue,
+          temperatureC: payload.temperatureC,
+          decision: payload.decision,
+          reason: payload.reason || null,
+          checkedAt: payload.checkedAt ?? new Date(),
+          ...warnings
+        }
+      });
+
+      await tx.issueNoteItem.update({
+        where: { id: itemId },
+        data: { processingStatus: payload.decision }
+      });
+
+      return check;
+    });
+
+    response.status(201).json(created);
+  })
+);
+
+router.post(
+  "/issue-note-items/:itemId/return",
+  asyncHandler(async (request, response) => {
+    const itemId = Number(request.params.itemId);
+    const result = await prisma.$transaction(async (tx) => {
+      const item = await tx.issueNoteItem.findFirst({
+        where: { id: itemId, deletedAt: null },
+        include: { issueNote: { include: { center: true } } }
+      });
+
+      if (!item) {
+        throw new AppError(404, "Issue can not found");
+      }
+
+      if (item.issueNote.type !== "Sap") {
+        throw new AppError(400, "Only Sap issue note cans can be returned from processing quality checks");
+      }
+
+      if (item.processingStatus !== "Spoiled") {
+        throw new AppError(400, "Only spoiled can rows can be returned");
+      }
+
+      const systemCan = await tx.systemCan.findUnique({ where: { canCode: item.canCode } });
+
+      if (!systemCan) {
+        throw new AppError(400, "Registered system can not found for this row");
+      }
+
+      const now = new Date();
+      const reference = item.issueNote.issueNoteName;
+      await tx.systemCan.update({
+        where: { id: systemCan.id },
+        data: {
+          status: "In warehouse",
+          agentName: item.issueNote.center?.agent ?? null,
+          reference,
+          lastUpdated: now,
+          histories: {
+            create: {
+              status: "In warehouse",
+              agentName: item.issueNote.center?.agent ?? null,
+              reference,
+              note: "Returned after spoiled processing quality check",
+              createdAt: now
+            }
+          }
+        }
+      });
+
+      return tx.issueNoteItem.update({
+        where: { id: itemId },
+        data: { processingStatus: "Returned" },
+        include: latestQualityCheckInclude
+      });
+    });
+
+    response.json(result);
+  })
+);
+
 router.get(
   "/transfer-notes",
   asyncHandler(async (request, response) => {
@@ -342,6 +660,23 @@ router.get(
   })
 );
 
+router.post(
+  "/transfer-notes",
+  asyncHandler(async (request, response) => {
+    const payload = transferNoteSchema.parse(request.body);
+    const transferNote = await prisma.transferNote.create({
+      data: {
+        ...payload,
+        status: "Active",
+        canCount: 0
+      },
+      include: { center: true, items: { where: { deletedAt: null }, orderBy: { createdAt: "asc" } } }
+    });
+
+    response.status(201).json(transferNote);
+  })
+);
+
 router.get(
   "/transfer-notes/:id",
   asyncHandler(async (request, response) => {
@@ -358,5 +693,165 @@ router.get(
     response.json(transferNote);
   })
 );
+
+router.patch(
+  "/transfer-notes/:id",
+  asyncHandler(async (request, response) => {
+    const id = Number(request.params.id);
+    const payload = updateTransferNoteSchema.parse(request.body);
+    const existing = await prisma.transferNote.findFirst({ where: { id, deletedAt: null } });
+
+    if (!existing) {
+      throw new AppError(404, "Transfer note not found");
+    }
+
+    const transferNote = await prisma.transferNote.update({
+      where: { id },
+      data: payload,
+      include: { center: true, items: { where: { deletedAt: null }, orderBy: { createdAt: "asc" } } }
+    });
+
+    response.json(transferNote);
+  })
+);
+
+router.post(
+  "/transfer-notes/:id/items",
+  asyncHandler(async (request, response) => {
+    const id = Number(request.params.id);
+    const payload = transferNoteItemSchema.parse(request.body);
+    const transferNote = await prisma.$transaction(async (tx) => {
+      const existing = await tx.transferNote.findFirst({ where: { id, deletedAt: null } });
+
+      if (!existing) {
+        throw new AppError(404, "Transfer note not found");
+      }
+
+      if (existing.status !== "Active") {
+        throw new AppError(400, "Only active transfer notes can be edited");
+      }
+
+      const systemCan = await tx.systemCan.findUnique({ where: { canCode: payload.canCode } });
+
+      if (!systemCan) {
+        throw new AppError(400, "Only registered system cans can be added");
+      }
+
+      if (systemCan.status !== "In warehouse") {
+        throw new AppError(400, "Only in-warehouse system cans can be added");
+      }
+
+      await tx.transferNoteItem.create({
+        data: {
+          transferNoteId: id,
+          canCode: payload.canCode
+        }
+      });
+
+      return refreshTransferCount(tx, id);
+    });
+
+    response.status(201).json(transferNote);
+  })
+);
+
+router.delete(
+  "/transfer-notes/:id/items/:itemId",
+  asyncHandler(async (request, response) => {
+    const id = Number(request.params.id);
+    const itemId = Number(request.params.itemId);
+    await prisma.$transaction(async (tx) => {
+      const existing = await tx.transferNote.findFirst({ where: { id, deletedAt: null } });
+
+      if (!existing) {
+        throw new AppError(404, "Transfer note not found");
+      }
+
+      if (existing.status !== "Active") {
+        throw new AppError(400, "Only active transfer notes can be edited");
+      }
+
+      const deleted = await tx.transferNoteItem.updateMany({
+        where: { id: itemId, transferNoteId: id, deletedAt: null },
+        data: { deletedAt: new Date() }
+      });
+
+      if (deleted.count === 0) {
+        throw new AppError(404, "Transfer can not found");
+      }
+
+      await refreshTransferCount(tx, id);
+    });
+
+    response.status(204).send();
+  })
+);
+
+async function refreshTransferCount(tx: Prisma.TransactionClient, transferNoteId: number) {
+  const count = await tx.transferNoteItem.count({
+    where: { transferNoteId, deletedAt: null }
+  });
+
+  return tx.transferNote.update({
+    where: { id: transferNoteId },
+    data: { canCount: count },
+    include: { center: true, items: { where: { deletedAt: null }, orderBy: { createdAt: "asc" } } }
+  });
+}
+
+function qualityWarnings(payload: z.infer<typeof qualityCheckSchema>) {
+  const phWarning = payload.phValue < sapQualityWarningLimits.ph.min || payload.phValue > sapQualityWarningLimits.ph.max;
+  const brixWarning = payload.brixValue < sapQualityWarningLimits.brix.min || payload.brixValue > sapQualityWarningLimits.brix.max;
+  const temperatureWarning =
+    payload.temperatureC < sapQualityWarningLimits.temperatureC.min || payload.temperatureC > sapQualityWarningLimits.temperatureC.max;
+  const messages = [
+    phWarning ? `pH outside ${sapQualityWarningLimits.ph.min}-${sapQualityWarningLimits.ph.max}` : "",
+    brixWarning ? `Brix outside ${sapQualityWarningLimits.brix.min}-${sapQualityWarningLimits.brix.max}` : "",
+    temperatureWarning
+      ? `Temperature outside ${sapQualityWarningLimits.temperatureC.min}-${sapQualityWarningLimits.temperatureC.max} C`
+      : ""
+  ].filter(Boolean);
+
+  return {
+    phWarning,
+    brixWarning,
+    temperatureWarning,
+    warningMessage: messages.length > 0 ? messages.join("; ") : null
+  };
+}
+
+function csvCell(value: unknown) {
+  if (value == null) return "";
+  const text = value instanceof Date ? value.toISOString() : String(value);
+  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+function csvDate(value: Date | string | null | undefined) {
+  if (!value) return "";
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : date.toISOString();
+}
+
+function hoursBetween(start: Date | string, end: Date | string) {
+  const startDate = start instanceof Date ? start : new Date(start);
+  const endDate = end instanceof Date ? end : new Date(end);
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return "";
+  return ((endDate.getTime() - startDate.getTime()) / 36e5).toFixed(2);
+}
+
+async function refreshIssueTotals(tx: Prisma.TransactionClient, issueNoteId: number) {
+  const items = await tx.issueNoteItem.findMany({
+    where: { issueNoteId, deletedAt: null }
+  });
+
+  return tx.issueNote.update({
+    where: { id: issueNoteId },
+    data: {
+      canCount: items.length,
+      totalQty: items.reduce((sum, item) => sum + item.quantity, 0)
+    },
+    include: { center: true, items: { where: { deletedAt: null }, orderBy: { createdAt: "asc" } } }
+  });
+}
 
 export { router as fieldCollectionRouter };

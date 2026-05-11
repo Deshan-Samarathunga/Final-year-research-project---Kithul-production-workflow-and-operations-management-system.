@@ -101,11 +101,36 @@ model IssueNoteItem {
   quantity          Float
   phValue           Float     @default(0)
   brixValue         Float     @default(0)
+  temperatureC      Float?
+  processingStatus  String    @default("Pending")
+  processingQualityChecks ProcessingQualityCheck[]
   deletedAt         DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
   @@index([issueNoteId])
+}
+
+model ProcessingQualityCheck {
+  id              Int           @id @default(autoincrement())
+  issueNoteItemId Int
+  issueNoteItem   IssueNoteItem @relation(fields: [issueNoteItemId], references: [id], onDelete: Cascade)
+  phValue         Float
+  brixValue       Float
+  temperatureC    Float
+  decision        String
+  reason          String?
+  phWarning       Boolean       @default(false)
+  brixWarning     Boolean       @default(false)
+  temperatureWarning Boolean    @default(false)
+  warningMessage  String?
+  checkedAt       DateTime      @default(now())
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([issueNoteItemId])
+  @@index([decision])
+  @@index([checkedAt])
 }
 
 model TransferNote {
