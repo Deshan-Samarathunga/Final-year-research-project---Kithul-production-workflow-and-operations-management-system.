@@ -146,14 +146,25 @@ class MobileSyncService {
   }
 
   Future<Map<String, Object?>> _buildPendingPayload() async {
+    // Include notes that are pending OR marked synced but never confirmed
+    // by the server (no valid numeric remoteId).
+    bool _needsSync(String syncStatus, String? remoteId) {
+      if (syncStatus != SyncStatus.synced) return true;
+      // Seed data may be marked 'synced' but was never uploaded —
+      // detect by checking if remoteId is missing or non-numeric.
+      if (remoteId == null || remoteId.isEmpty) return true;
+      final parsed = int.tryParse(remoteId);
+      return parsed == null;
+    }
+
     final issueNotes = (await db.select(db.issueNotes).get()).where(
-      (row) => row.syncStatus != SyncStatus.synced,
+      (row) => _needsSync(row.syncStatus, row.remoteId),
     );
     final issueNoteItems = (await db.select(db.issueNoteItems).get()).where(
       (row) => row.syncStatus != SyncStatus.synced,
     );
     final transferNotes = (await db.select(db.transferNotes).get()).where(
-      (row) => row.syncStatus != SyncStatus.synced,
+      (row) => _needsSync(row.syncStatus, row.remoteId),
     );
     final transferNoteItems = (await db.select(db.transferNoteItems).get())
         .where((row) => row.syncStatus != SyncStatus.synced);

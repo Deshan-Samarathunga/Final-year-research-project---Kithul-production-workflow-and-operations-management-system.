@@ -1,0 +1,4 @@
+area_name,district,lat,lon,avg_d_kbps,avg_u_kbps,avg_lat_ms,tower_count,nearest_tower_km
+Neluwa,Galle,6.367,80.367,4200,900,140,4,2.1
+Warukandeniya,Galle,6.35,80.39,1800,500,230,2,4.7
+Tinniyawala,Kalutara,6.45,80.17,6500,1200,80,5,1.5

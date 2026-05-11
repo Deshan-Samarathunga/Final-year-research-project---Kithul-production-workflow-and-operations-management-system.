@@ -21,6 +21,9 @@ export function createApp() {
       crossOriginResourcePolicy: false
     })
   );
+  // Mobile API uses permissive CORS (native HTTP clients like Dio
+  // don't enforce CORS, but some Android proxy layers may add Origin).
+  app.use("/api/mobile", cors());
   app.use(
     cors({
       origin: env.CLIENT_URL,
