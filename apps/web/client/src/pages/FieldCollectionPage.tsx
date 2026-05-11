@@ -1,7 +1,7 @@
 import { FormEvent, useCallback, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, Calendar, Plus, Search, X } from "lucide-react";
+import { ArrowRight, Calendar, CheckCircle2, Plus, Search, X } from "lucide-react";
 import { centersApi, fieldCollectionApi, type FieldCollectionFilters, type IssueNote } from "../api/client";
 import { queryKeys } from "../api/queryKeys";
 import { Button } from "../components/Button";
@@ -181,6 +181,17 @@ export function FieldCollectionPage() {
     queryKey: queryKeys.issueNotes(status, page, pageSize, search, filterKey),
     queryFn: () => fieldCollectionApi.list({ status, page, pageSize, search, filters })
   });
+  const queryClient = useQueryClient();
+  const [submitError, setSubmitError] = useState("");
+  const submitNote = useMutation({
+    mutationFn: (id: number) => fieldCollectionApi.update(id, { status: "Completed" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["issue-notes"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard });
+      setSubmitError("");
+    },
+    onError: (err: Error) => setSubmitError(err.message)
+  });
 
   const updateFilter = useCallback((key: keyof FieldCollectionFilters, value: string) => {
     setFilters((current) => ({ ...current, [key]: value }));
@@ -255,13 +266,35 @@ export function FieldCollectionPage() {
         header: "Actions",
         align: "right",
         accessor: (row) => (
-          <Link to={`/admin/field-collection/issue-notes/${row.id}`}>
-            <Button icon={<Search className="h-4 w-4" />}>{row.status === "Active" ? "Continue" : "View"}</Button>
-          </Link>
+          <div className="flex items-center justify-end gap-2">
+            {row.status === "Active" ? (
+              <>
+                <Button
+                  type="button"
+                  variant="primary"
+                  disabled={submitNote.isPending}
+                  onClick={() => {
+                    setSubmitError("");
+                    submitNote.mutate(row.id);
+                  }}
+                  icon={<CheckCircle2 className="h-4 w-4" />}
+                >
+                  Submit
+                </Button>
+                <Link to={`/admin/field-collection/issue-notes/${row.id}`}>
+                  <Button icon={<Search className="h-4 w-4" />}>Continue</Button>
+                </Link>
+              </>
+            ) : (
+              <Link to={`/admin/field-collection/issue-notes/${row.id}`}>
+                <Button icon={<Search className="h-4 w-4" />}>View</Button>
+              </Link>
+            )}
+          </div>
         )
       }
     ],
-    [data?.facets.agents, data?.facets.types, data?.total, filters, updateCollectionRange, updateFilter]
+    [data?.facets.agents, data?.facets.types, data?.total, filters, submitNote, updateCollectionRange, updateFilter]
   );
 
   return (
@@ -302,6 +335,7 @@ export function FieldCollectionPage() {
           </>
         }
       >
+        {submitError ? <p className="border-b border-red-200 bg-red-50 px-4 py-2 text-sm font-medium text-red-700">{submitError}</p> : null}
         <DataTable
           columns={columns}
           data={data?.data ?? []}

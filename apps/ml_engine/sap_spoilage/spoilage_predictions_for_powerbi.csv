@@ -1,4 +1,6 @@
-Can_ID,Initial_pH,Initial_Brix,Temperature,Predicted_Spoilage_Hours,Risk_Category
-AR001,6.1,11.0,30,11.8,Low Risk
-AR002,5.8,10.0,32,6.66,High Risk
-AR003,6.5,12.0,5,39.47,Low Risk
+Can_ID,Initial_pH,Initial_Brix,Temperature,Predicted_Spoilage_Hours,Estimated_Spoilage_DateTime,Risk_Category,Processing_Priority
+AR001,6.1,11.0,30,11.0,2026-05-11 19:00,Medium,NORMAL: Process within today's schedule
+AR002,5.8,10.0,32,8.5,2026-05-11 16:30,High,PRIORITY: Schedule for next processing batch
+AR003,6.5,12.0,5,38.0,2026-05-12 22:00,Low,QUEUE: Safe for regular processing order
+AR004,5.5,9.5,34,5.0,2026-05-11 13:00,Critical,URGENT: Process immediately - spoilage imminent
+AR005,6.0,11.2,28,14.0,2026-05-11 22:00,Medium,NORMAL: Process within today's schedule

@@ -1,0 +1,54 @@
+Here are the full details of your Machine Learning-Based Sap Spoilage Prediction component, strictly focused on its **needs** (requirements, data, stakeholders, and technical prerequisites):
+
+### 1. Stakeholder Needs (Who needs this and why)
+
+* **Processing-Center Managers:** Need to prioritize raw material handling and make condition-based scheduling decisions.
+* **Quality Assurance (QA) Staff:** Need a system that utilizes their verified pH, Brix, and temperature measurements to issue early warnings.
+* **Production Staff:** Need clear, actionable instructions on which sap batches should be processed first to avoid spoilage.
+* **Business Owners:** Need evidence-based insights to reduce raw-material wastage and financial loss.
+
+### 2. Data Needs (What the model requires to function)
+
+To successfully train the model and generate predictions, the system requires specific data points for each sap collection instance:
+
+* **Input Features (Early Measurements):** * Initial pH (acidity/alkalinity).
+* Initial Brix (sugar-content indicator).
+* Ambient temperature conditions.
+
+
+* **Time-Related Inputs:** * Tapped date/time.
+* Early measurement date/time.
+
+
+* **Engineered Features:** * Calculated time delay (in hours) between tapping and the early measurement.
+* **Training Labels (For Supervised Learning):** * Later quality checks (later pH and later Brix) to determine the exact observed spoilage point.
+* *Project Rule:* Spoilage is defined as crossing the threshold of $pH \le 4.6$ or $Brix \le 8$.
+
+
+
+### 3. Functional Needs (What the system must execute)
+
+The component must perform the following step-by-step pipeline operations:
+
+* **Data Validation & Cleaning:** Accept sap-quality records, convert separate date/time fields into valid timestamps, remove duplicates, and handle missing or extreme values.
+* **Feature Preparation:** Calculate time-delay features, encode categorical temperature conditions (if exact Celsius is unavailable), and scale numerical features for the ML matrix.
+* **Model Training:** Train and compare specific regression models (Multiple Linear Regression, Decision Tree Regressor, Random Forest Regressor, and Gradient Boosting Regressor).
+* **Prediction Output:** Calculate and output the continuous time value: **remaining viable hours** and the **estimated spoilage date/time**.
+* **Decision Support Generation:** Categorize the raw prediction into operational risk bands (e.g., Low, Medium, High, Critical) and generate a priority processing recommendation.
+* **Integration:** Provide the final prediction results in a format suitable for dashboard display or API integration.
+
+### 4. Non-Functional Needs (Performance and Quality Standards)
+
+* **Accuracy:** The model must demonstrate improved accuracy (measured via Mean Absolute Error, Root Mean Squared Error, and R-squared) compared to a simple historical average baseline.
+* **Performance:** Inference (prediction generation) must be fast enough for interactive decision-support use on a dashboard.
+* **Explainability:** The model must provide interpretable results so users understand how pH, Brix, temperature, and delay affected the prediction.
+* **Security:** Access to operational quality data and predictions must be role-controlled to protect commercially sensitive information.
+* **Reproducibility & Maintainability:** The codebase must be modular. Model versions, feature sets, and evaluation scores must be documented.
+
+### 5. Technical Needs (Tools and Platforms)
+
+* **Programming Language:** Python.
+* **Data Manipulation:** Pandas and NumPy for cleaning, timestamp handling, and numerical operations.
+* **Machine Learning:** Scikit-learn for regression algorithms, preprocessing pipelines, and evaluation metrics.
+* **Development Environment:** Jupyter Notebook or Google Colab for exploratory data analysis (EDA) and iterative development.
+* **Visualization:** Matplotlib for plotting model results, error distributions, and feature trends.
