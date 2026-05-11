@@ -238,7 +238,7 @@ class FieldCollectionRepository {
       status: Value(status),
       canCount: Value(canCount),
       totalQty: Value(totalQty),
-      syncStatus: const Value(SyncStatus.synced),
+      syncStatus: const Value(SyncStatus.pendingCreate),
       createdAt: Value(now),
       updatedAt: Value(now),
     );
