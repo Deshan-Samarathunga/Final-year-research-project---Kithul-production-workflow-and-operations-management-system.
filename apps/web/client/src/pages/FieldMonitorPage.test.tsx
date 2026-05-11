@@ -98,6 +98,7 @@ const monitorResponse: FieldMonitorResponse = {
       quantity: 12.5,
       phValue: 6.2,
       brixValue: 14.8,
+      temperatureC: 30,
       deletedAt: null,
       createdAt: "2026-05-08T08:00:00.000Z",
       updatedAt: "2026-05-08T08:05:00.000Z",
