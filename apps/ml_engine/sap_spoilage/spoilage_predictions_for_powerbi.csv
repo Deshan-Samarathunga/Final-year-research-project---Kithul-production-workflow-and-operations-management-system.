@@ -1,6 +1,34 @@
 Can_ID,Initial_pH,Initial_Brix,Temperature,Predicted_Spoilage_Hours,Estimated_Spoilage_DateTime,Risk_Category,Processing_Priority
-AR001,6.1,11.0,30,11.0,2026-05-11 19:00,Medium,NORMAL: Process within today's schedule
-AR002,5.8,10.0,32,8.5,2026-05-11 16:30,High,PRIORITY: Schedule for next processing batch
-AR003,6.5,12.0,5,38.0,2026-05-12 22:00,Low,QUEUE: Safe for regular processing order
-AR004,5.5,9.5,34,5.0,2026-05-11 13:00,Critical,URGENT: Process immediately - spoilage imminent
-AR005,6.0,11.2,28,14.0,2026-05-11 22:00,Medium,NORMAL: Process within today's schedule
+AR001,6.5,12.0,5,50.41,2026-05-13 10:24,Low,QUEUE: Safe for regular processing order
+AR002,6.5,12.0,28,13.16,2026-05-11 21:09,Medium,NORMAL: Process within today's schedule
+AR003,5.8,10.0,30,10.71,2026-05-11 18:42,Medium,NORMAL: Process within today's schedule
+AR004,5.5,9.5,34,4.84,2026-05-11 12:50,Critical,URGENT: Process immediately - spoilage imminent
+AR005,6.4,11.8,6,48.97,2026-05-13 08:57,Low,QUEUE: Safe for regular processing order
+AR008,6.0,11.0,29,12.43,2026-05-11 20:26,Medium,NORMAL: Process within today's schedule
+AR009,5.7,9.8,33,6.03,2026-05-11 14:01,High,PRIORITY: Schedule for next processing batch
+AR010,6.2,11.5,4,52.64,2026-05-13 12:38,Low,QUEUE: Safe for regular processing order
+AR011,5.9,10.5,31,9.14,2026-05-11 17:08,High,PRIORITY: Schedule for next processing batch
+AR012,6.3,11.2,27,14.82,2026-05-11 22:49,Medium,NORMAL: Process within today's schedule
+AR013,5.6,9.6,35,2.97,2026-05-11 10:57,Critical,URGENT: Process immediately - spoilage imminent
+AR014,6.5,12.1,7,47.25,2026-05-13 07:14,Low,QUEUE: Safe for regular processing order
+AR015,6.1,10.8,30,10.32,2026-05-11 18:19,Medium,NORMAL: Process within today's schedule
+AR016,5.4,9.0,36,1.55,2026-05-11 09:32,Critical,URGENT: Process immediately - spoilage imminent
+AR017,6.4,11.9,5,50.66,2026-05-13 10:39,Low,QUEUE: Safe for regular processing order
+AR018,5.9,10.2,32,7.29,2026-05-11 15:17,High,PRIORITY: Schedule for next processing batch
+AR019,6.2,11.4,25,18.55,2026-05-12 02:33,Low,QUEUE: Safe for regular processing order
+AR020,5.8,9.9,31,9.01,2026-05-11 17:00,High,PRIORITY: Schedule for next processing batch
+AR021,6.6,12.5,4,52.08,2026-05-13 12:04,Low,QUEUE: Safe for regular processing order
+AR022,5.7,10.1,29,12.74,2026-05-11 20:44,Medium,NORMAL: Process within today's schedule
+AR023,6.0,11.3,8,46.68,2026-05-13 06:40,Low,QUEUE: Safe for regular processing order
+AR024,5.5,9.2,33,6.23,2026-05-11 14:13,High,PRIORITY: Schedule for next processing batch
+AR025,6.3,11.7,26,16.83,2026-05-12 00:49,Medium,NORMAL: Process within today's schedule
+AR026,5.8,10.4,31,9.4,2026-05-11 17:23,High,PRIORITY: Schedule for next processing batch
+AR027,6.1,11.0,10,42.87,2026-05-13 02:52,Low,QUEUE: Safe for regular processing order
+AR028,5.6,9.7,34,4.66,2026-05-11 12:39,Critical,URGENT: Process immediately - spoilage imminent
+AR029,6.4,12.0,6,49.12,2026-05-13 09:07,Low,QUEUE: Safe for regular processing order
+AR030,5.9,10.6,28,14.08,2026-05-11 22:04,Medium,NORMAL: Process within today's schedule
+AR031,6.2,11.6,15,34.91,2026-05-12 18:54,Low,QUEUE: Safe for regular processing order
+AR032,5.4,9.3,35,3.4,2026-05-11 11:24,Critical,URGENT: Process immediately - spoilage imminent
+AR033,6.5,11.8,22,22.72,2026-05-12 06:43,Low,QUEUE: Safe for regular processing order
+AR034,5.7,10.0,30,11.04,2026-05-11 19:02,Medium,NORMAL: Process within today's schedule
+AR035,6.0,10.9,12,39.89,2026-05-12 23:53,Low,QUEUE: Safe for regular processing order

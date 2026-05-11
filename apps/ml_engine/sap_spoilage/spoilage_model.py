@@ -25,17 +25,16 @@ from urllib.request import urlopen
 
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
-from sklearn.tree import DecisionTreeRegressor
 
 
 # ─── Configuration ───────────────────────────────────────────────────────────
 
 BASE_DIR = Path(__file__).resolve().parent
 DATA_PATH = BASE_DIR / "sap_data.csv"
+PREDICTION_INPUT_PATH = BASE_DIR / "current_sap_batches.csv"
 DEFAULT_OUTPUT_PATH = BASE_DIR / "spoilage_predictions_for_powerbi.csv"
 
 # Web app API endpoint for real training data
@@ -180,24 +179,17 @@ def validate_and_clean(dataframe: pd.DataFrame) -> pd.DataFrame:
 # ─── 3. Model Training (Multi-Model Comparison) ─────────────────────────────
 
 def get_models() -> Dict[str, object]:
-    """Return dictionary of regression models to compare."""
+    """Return dictionary of regression models to evaluate."""
     return {
         "Linear Regression": LinearRegression(),
-        "Decision Tree": DecisionTreeRegressor(random_state=RANDOM_STATE),
-        "Random Forest": RandomForestRegressor(
-            n_estimators=50, random_state=RANDOM_STATE
-        ),
-        "Gradient Boosting": GradientBoostingRegressor(
-            n_estimators=50, random_state=RANDOM_STATE
-        ),
     }
 
 
-def train_and_compare(
+def train_and_evaluate(
     dataframe: pd.DataFrame,
 ) -> Tuple[object, str, pd.DataFrame, pd.DataFrame, pd.Series]:
     """
-    Train all candidate models, evaluate each, and return the best one.
+    Train the model, evaluate it, and return it.
 
     Evaluation metrics: MAE, RMSE, R-squared.
     Returns: (best_model, best_name, results_df, X_test, y_test)
@@ -352,7 +344,7 @@ def main() -> None:
     print("=" * 60)
     print("STEP 1: Data Loading")
     print("=" * 60)
-    df, data_source = load_data()
+    df, data_source = load_data(use_api=False)
     print(f"  Source: {data_source}")
     print(f"  Loaded {len(df)} records")
     print(df.head())
@@ -363,13 +355,13 @@ def main() -> None:
     print("=" * 60)
     df_clean = validate_and_clean(df)
 
-    # ── Step 3: Multi-Model Training & Comparison ──
+    # ── Step 3: Model Training & Evaluation ──
     print("\n" + "=" * 60)
-    print("STEP 3: Multi-Model Training & Comparison")
+    print("STEP 3: Model Training & Evaluation")
     print("=" * 60)
-    best_model, best_name, comparison_df, X_test, y_test = train_and_compare(df_clean)
+    best_model, best_name, comparison_df, X_test, y_test = train_and_evaluate(df_clean)
 
-    print("\n  Model Comparison Table:")
+    print("\n  Model Evaluation Table:")
     print(comparison_df.to_string(index=False))
 
     # ── Step 4: Prediction Output + Decision Support ──
@@ -377,13 +369,9 @@ def main() -> None:
     print("STEP 4: Prediction & Decision Support")
     print("=" * 60)
 
-    # Simulate current sap batches from 3 system cans
-    current_sap_batches = pd.DataFrame({
-        "canCode": ["AR001", "AR002", "AR003", "AR004", "AR005"],
-        "Initial_pH": [6.1, 5.8, 6.5, 5.5, 6.0],
-        "Initial_Brix": [11.0, 10.0, 12.0, 9.5, 11.2],
-        "Temperature": [30, 32, 5, 34, 28],
-    })
+    # Load current sap batches from prediction input CSV
+    print(f"  Loading prediction batches from: {PREDICTION_INPUT_PATH.name}")
+    current_sap_batches = pd.read_csv(PREDICTION_INPUT_PATH)
 
     # Use a fixed collection time for demo reproducibility
     demo_collection_time = datetime(2026, 5, 11, 8, 0, 0)
