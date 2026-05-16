@@ -2,6 +2,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
+import type { HelmetOptions } from "helmet";
 import { env } from "./env.js";
 import { requireAdmin } from "./middleware/auth.js";
 import { authRouter } from "./routes/auth.js";
@@ -16,8 +17,12 @@ import { errorHandler } from "./utils/http.js";
 export function createApp() {
   const app = express();
 
+  type HelmetFactory = (options?: HelmetOptions) => import("express").RequestHandler;
+  const helmetFactory =
+    (helmet as unknown as { default?: HelmetFactory }).default ?? (helmet as unknown as HelmetFactory);
+
   app.use(
-    (helmet as unknown as import("helmet").default)({
+    helmetFactory({
       crossOriginResourcePolicy: false
     })
   );
