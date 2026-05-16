@@ -16,6 +16,7 @@ import { errorHandler } from "./utils/http.js";
 
 export function createApp() {
   const app = express();
+  const allowedOrigins = new Set([env.CLIENT_URL]);
 
   type HelmetFactory = (options?: HelmetOptions) => import("express").RequestHandler;
   const helmetFactory =
@@ -31,7 +32,19 @@ export function createApp() {
   app.use("/api/mobile", cors());
   app.use(
     cors({
-      origin: env.CLIENT_URL,
+      origin: (origin, callback) => {
+        if (!origin) {
+          callback(null, true);
+          return;
+        }
+
+        if (allowedOrigins.has(origin) || origin.endsWith(".vercel.app")) {
+          callback(null, true);
+          return;
+        }
+
+        callback(new Error("Not allowed by CORS"));
+      },
       credentials: true
     })
   );
