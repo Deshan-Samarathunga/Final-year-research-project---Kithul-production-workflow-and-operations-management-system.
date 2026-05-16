@@ -94,7 +94,6 @@ beforeEach(() => {
       quantity: 12.5,
       phValue: 6.2,
       brixValue: 14.8,
-      temperatureC: 30,
       issueNote: {
         id: 20,
         issueNoteName: "Morning sap",
@@ -121,7 +120,7 @@ describe("field collection monitor routes", () => {
     expect(response.body.metrics.receivedIssueNotesToday).toBe(1);
     expect(response.body.metrics.lastSyncEmployee).toBe("Field Collector");
     expect(response.body.issueNotes[0].issueNoteName).toBe("Morning sap");
-    expect(response.body.issueNoteItems[0]).toEqual(expect.objectContaining({ canCode: "AR001", phValue: 6.2, temperatureC: 30 }));
+    expect(response.body.issueNoteItems[0]).toEqual(expect.objectContaining({ canCode: "AR001", phValue: 6.2 }));
     expect(mockPrisma.issueNote.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({

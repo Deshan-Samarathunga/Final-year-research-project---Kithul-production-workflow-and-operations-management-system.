@@ -37,7 +37,6 @@ const mobileIssueNoteItemSchema = z.object({
   quantity: z.number().positive(),
   phValue: z.number().min(0).max(14).default(0),
   brixValue: z.number().min(0).default(0),
-  temperatureC: z.number().min(0).optional().nullable(),
   updatedAt: z.coerce.date(),
   deletedAt: z.coerce.date().optional().nullable()
 });
@@ -184,7 +183,6 @@ router.post(
               quantity: item.quantity,
               phValue: item.phValue,
               brixValue: item.brixValue,
-              temperatureC: item.temperatureC ?? null,
               deletedAt: item.deletedAt ?? null
             },
             create: {
@@ -194,7 +192,6 @@ router.post(
               quantity: item.quantity,
               phValue: item.phValue,
               brixValue: item.brixValue,
-              temperatureC: item.temperatureC ?? null,
               deletedAt: item.deletedAt ?? null
             }
           });

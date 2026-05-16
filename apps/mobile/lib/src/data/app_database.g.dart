@@ -2236,17 +2236,6 @@ class $IssueNoteItemsTable extends IssueNoteItems
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
-  static const VerificationMeta _temperatureCMeta = const VerificationMeta(
-    'temperatureC',
-  );
-  @override
-  late final GeneratedColumn<double> temperatureC = GeneratedColumn<double>(
-    'temperature_c',
-    aliasedName,
-    true,
-    type: DriftSqlType.double,
-    requiredDuringInsert: false,
-  );
   static const VerificationMeta _syncStatusMeta = const VerificationMeta(
     'syncStatus',
   );
@@ -2304,7 +2293,6 @@ class $IssueNoteItemsTable extends IssueNoteItems
     quantity,
     phValue,
     brixValue,
-    temperatureC,
     syncStatus,
     createdAt,
     updatedAt,
@@ -2378,15 +2366,6 @@ class $IssueNoteItemsTable extends IssueNoteItems
         brixValue.isAcceptableOrUnknown(data['brix_value']!, _brixValueMeta),
       );
     }
-    if (data.containsKey('temperature_c')) {
-      context.handle(
-        _temperatureCMeta,
-        temperatureC.isAcceptableOrUnknown(
-          data['temperature_c']!,
-          _temperatureCMeta,
-        ),
-      );
-    }
     if (data.containsKey('sync_status')) {
       context.handle(
         _syncStatusMeta,
@@ -2452,10 +2431,6 @@ class $IssueNoteItemsTable extends IssueNoteItems
         DriftSqlType.double,
         data['${effectivePrefix}brix_value'],
       )!,
-      temperatureC: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}temperature_c'],
-      ),
       syncStatus: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}sync_status'],
@@ -2491,7 +2466,6 @@ class IssueNoteItemRecord extends DataClass
   final double quantity;
   final double phValue;
   final double brixValue;
-  final double? temperatureC;
   final String syncStatus;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -2505,7 +2479,6 @@ class IssueNoteItemRecord extends DataClass
     required this.quantity,
     required this.phValue,
     required this.brixValue,
-    this.temperatureC,
     required this.syncStatus,
     required this.createdAt,
     required this.updatedAt,
@@ -2524,9 +2497,6 @@ class IssueNoteItemRecord extends DataClass
     map['quantity'] = Variable<double>(quantity);
     map['ph_value'] = Variable<double>(phValue);
     map['brix_value'] = Variable<double>(brixValue);
-    if (!nullToAbsent || temperatureC != null) {
-      map['temperature_c'] = Variable<double>(temperatureC);
-    }
     map['sync_status'] = Variable<String>(syncStatus);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -2548,9 +2518,6 @@ class IssueNoteItemRecord extends DataClass
       quantity: Value(quantity),
       phValue: Value(phValue),
       brixValue: Value(brixValue),
-      temperatureC: temperatureC == null && nullToAbsent
-          ? const Value.absent()
-          : Value(temperatureC),
       syncStatus: Value(syncStatus),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
@@ -2574,7 +2541,6 @@ class IssueNoteItemRecord extends DataClass
       quantity: serializer.fromJson<double>(json['quantity']),
       phValue: serializer.fromJson<double>(json['phValue']),
       brixValue: serializer.fromJson<double>(json['brixValue']),
-      temperatureC: serializer.fromJson<double?>(json['temperatureC']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
@@ -2593,7 +2559,6 @@ class IssueNoteItemRecord extends DataClass
       'quantity': serializer.toJson<double>(quantity),
       'phValue': serializer.toJson<double>(phValue),
       'brixValue': serializer.toJson<double>(brixValue),
-      'temperatureC': serializer.toJson<double?>(temperatureC),
       'syncStatus': serializer.toJson<String>(syncStatus),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
@@ -2610,7 +2575,6 @@ class IssueNoteItemRecord extends DataClass
     double? quantity,
     double? phValue,
     double? brixValue,
-    Value<double?> temperatureC = const Value.absent(),
     String? syncStatus,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -2624,9 +2588,6 @@ class IssueNoteItemRecord extends DataClass
     quantity: quantity ?? this.quantity,
     phValue: phValue ?? this.phValue,
     brixValue: brixValue ?? this.brixValue,
-    temperatureC: temperatureC.present
-        ? temperatureC.value
-        : this.temperatureC,
     syncStatus: syncStatus ?? this.syncStatus,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
@@ -2644,9 +2605,6 @@ class IssueNoteItemRecord extends DataClass
       quantity: data.quantity.present ? data.quantity.value : this.quantity,
       phValue: data.phValue.present ? data.phValue.value : this.phValue,
       brixValue: data.brixValue.present ? data.brixValue.value : this.brixValue,
-      temperatureC: data.temperatureC.present
-          ? data.temperatureC.value
-          : this.temperatureC,
       syncStatus: data.syncStatus.present
           ? data.syncStatus.value
           : this.syncStatus,
@@ -2667,7 +2625,6 @@ class IssueNoteItemRecord extends DataClass
           ..write('quantity: $quantity, ')
           ..write('phValue: $phValue, ')
           ..write('brixValue: $brixValue, ')
-          ..write('temperatureC: $temperatureC, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
@@ -2686,7 +2643,6 @@ class IssueNoteItemRecord extends DataClass
     quantity,
     phValue,
     brixValue,
-    temperatureC,
     syncStatus,
     createdAt,
     updatedAt,
@@ -2704,7 +2660,6 @@ class IssueNoteItemRecord extends DataClass
           other.quantity == this.quantity &&
           other.phValue == this.phValue &&
           other.brixValue == this.brixValue &&
-          other.temperatureC == this.temperatureC &&
           other.syncStatus == this.syncStatus &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
@@ -2720,7 +2675,6 @@ class IssueNoteItemsCompanion extends UpdateCompanion<IssueNoteItemRecord> {
   final Value<double> quantity;
   final Value<double> phValue;
   final Value<double> brixValue;
-  final Value<double?> temperatureC;
   final Value<String> syncStatus;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
@@ -2734,7 +2688,6 @@ class IssueNoteItemsCompanion extends UpdateCompanion<IssueNoteItemRecord> {
     this.quantity = const Value.absent(),
     this.phValue = const Value.absent(),
     this.brixValue = const Value.absent(),
-    this.temperatureC = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -2749,7 +2702,6 @@ class IssueNoteItemsCompanion extends UpdateCompanion<IssueNoteItemRecord> {
     required double quantity,
     this.phValue = const Value.absent(),
     this.brixValue = const Value.absent(),
-    this.temperatureC = const Value.absent(),
     this.syncStatus = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -2767,7 +2719,6 @@ class IssueNoteItemsCompanion extends UpdateCompanion<IssueNoteItemRecord> {
     Expression<double>? quantity,
     Expression<double>? phValue,
     Expression<double>? brixValue,
-    Expression<double>? temperatureC,
     Expression<String>? syncStatus,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
@@ -2782,7 +2733,6 @@ class IssueNoteItemsCompanion extends UpdateCompanion<IssueNoteItemRecord> {
       if (quantity != null) 'quantity': quantity,
       if (phValue != null) 'ph_value': phValue,
       if (brixValue != null) 'brix_value': brixValue,
-      if (temperatureC != null) 'temperature_c': temperatureC,
       if (syncStatus != null) 'sync_status': syncStatus,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
@@ -2799,7 +2749,6 @@ class IssueNoteItemsCompanion extends UpdateCompanion<IssueNoteItemRecord> {
     Value<double>? quantity,
     Value<double>? phValue,
     Value<double>? brixValue,
-    Value<double?>? temperatureC,
     Value<String>? syncStatus,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
@@ -2814,7 +2763,6 @@ class IssueNoteItemsCompanion extends UpdateCompanion<IssueNoteItemRecord> {
       quantity: quantity ?? this.quantity,
       phValue: phValue ?? this.phValue,
       brixValue: brixValue ?? this.brixValue,
-      temperatureC: temperatureC ?? this.temperatureC,
       syncStatus: syncStatus ?? this.syncStatus,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -2849,9 +2797,6 @@ class IssueNoteItemsCompanion extends UpdateCompanion<IssueNoteItemRecord> {
     if (brixValue.present) {
       map['brix_value'] = Variable<double>(brixValue.value);
     }
-    if (temperatureC.present) {
-      map['temperature_c'] = Variable<double>(temperatureC.value);
-    }
     if (syncStatus.present) {
       map['sync_status'] = Variable<String>(syncStatus.value);
     }
@@ -2878,7 +2823,6 @@ class IssueNoteItemsCompanion extends UpdateCompanion<IssueNoteItemRecord> {
           ..write('quantity: $quantity, ')
           ..write('phValue: $phValue, ')
           ..write('brixValue: $brixValue, ')
-          ..write('temperatureC: $temperatureC, ')
           ..write('syncStatus: $syncStatus, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
@@ -6114,7 +6058,6 @@ typedef $$IssueNoteItemsTableCreateCompanionBuilder =
       required double quantity,
       Value<double> phValue,
       Value<double> brixValue,
-      Value<double?> temperatureC,
       Value<String> syncStatus,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
@@ -6130,7 +6073,6 @@ typedef $$IssueNoteItemsTableUpdateCompanionBuilder =
       Value<double> quantity,
       Value<double> phValue,
       Value<double> brixValue,
-      Value<double?> temperatureC,
       Value<String> syncStatus,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
@@ -6183,11 +6125,6 @@ class $$IssueNoteItemsTableFilterComposer
 
   ColumnFilters<double> get brixValue => $composableBuilder(
     column: $table.brixValue,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<double> get temperatureC => $composableBuilder(
-    column: $table.temperatureC,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6261,11 +6198,6 @@ class $$IssueNoteItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<double> get temperatureC => $composableBuilder(
-    column: $table.temperatureC,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
     builder: (column) => ColumnOrderings(column),
@@ -6321,11 +6253,6 @@ class $$IssueNoteItemsTableAnnotationComposer
 
   GeneratedColumn<double> get brixValue =>
       $composableBuilder(column: $table.brixValue, builder: (column) => column);
-
-  GeneratedColumn<double> get temperatureC => $composableBuilder(
-    column: $table.temperatureC,
-    builder: (column) => column,
-  );
 
   GeneratedColumn<String> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
@@ -6387,7 +6314,6 @@ class $$IssueNoteItemsTableTableManager
                 Value<double> quantity = const Value.absent(),
                 Value<double> phValue = const Value.absent(),
                 Value<double> brixValue = const Value.absent(),
-                Value<double?> temperatureC = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
@@ -6401,7 +6327,6 @@ class $$IssueNoteItemsTableTableManager
                 quantity: quantity,
                 phValue: phValue,
                 brixValue: brixValue,
-                temperatureC: temperatureC,
                 syncStatus: syncStatus,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
@@ -6417,7 +6342,6 @@ class $$IssueNoteItemsTableTableManager
                 required double quantity,
                 Value<double> phValue = const Value.absent(),
                 Value<double> brixValue = const Value.absent(),
-                Value<double?> temperatureC = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
@@ -6431,7 +6355,6 @@ class $$IssueNoteItemsTableTableManager
                 quantity: quantity,
                 phValue: phValue,
                 brixValue: brixValue,
-                temperatureC: temperatureC,
                 syncStatus: syncStatus,
                 createdAt: createdAt,
                 updatedAt: updatedAt,

@@ -17,7 +17,7 @@ export function createApp() {
   const app = express();
 
   app.use(
-    helmet({
+    (helmet as unknown as import("helmet").default)({
       crossOriginResourcePolicy: false
     })
   );
