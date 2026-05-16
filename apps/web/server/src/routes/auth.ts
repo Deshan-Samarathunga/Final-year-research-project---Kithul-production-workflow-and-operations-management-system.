@@ -33,10 +33,12 @@ router.post(
       displayName: admin.displayName
     });
 
+    const isProduction = env.NODE_ENV === "production";
+
     response.cookie("kithulflow_token", token, {
       httpOnly: true,
-      sameSite: "lax",
-      secure: env.NODE_ENV === "production",
+      sameSite: isProduction ? "none" : "lax",
+      secure: isProduction,
       maxAge: 8 * 60 * 60 * 1000
     });
 
