@@ -13,8 +13,8 @@ import { PagePanel } from "../components/PagePanel";
 import { Pagination } from "../components/Pagination";
 import { formatDateTime } from "../utils/format";
 
-const canStatuses = ["In warehouse", "Dispatched", "Lost", "Retired"];
-const canFilterStatuses = ["In warehouse", "Dispatched", "Collected", "Lost", "Retired"];
+const canStatuses = ["In warehouse", "Dispatched", "Collected"];
+const canFilterStatuses = ["In warehouse", "Dispatched", "Collected"];
 
 function countFor(options: FacetOption[] | undefined, value: string) {
   return options?.find((option) => option.value === value)?.count ?? 0;
@@ -22,8 +22,7 @@ function countFor(options: FacetOption[] | undefined, value: string) {
 
 function statusTone(status: string): BadgeTone {
   if (status === "Dispatched") return "teal";
-  if (status === "Lost") return "red";
-  if (status === "Retired") return "slate";
+  if (status === "Collected") return "green";
   return "yellow";
 }
 

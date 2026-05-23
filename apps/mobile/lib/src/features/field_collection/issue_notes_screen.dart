@@ -315,7 +315,7 @@ class _CreateIssueNoteFormState extends ConsumerState<_CreateIssueNoteForm> {
   final _nameController = TextEditingController();
   DateTime _collectionDate = DateTime.now();
   String? _centerLocalId;
-  String _type = ProductType.sap;
+  String _type = ProductType.fieldCollection;
 
   @override
   void dispose() {
@@ -379,16 +379,20 @@ class _CreateIssueNoteFormState extends ConsumerState<_CreateIssueNoteForm> {
             decoration: const InputDecoration(labelText: 'Issue note type'),
             items: const [
               DropdownMenuItem(
-                value: ProductType.sap,
-                child: Text(ProductType.sap),
+                value: ProductType.fieldCollection,
+                child: Text(ProductType.fieldCollection),
               ),
               DropdownMenuItem(
-                value: ProductType.treacle,
-                child: Text(ProductType.treacle),
+                value: ProductType.directCollection,
+                child: Text(ProductType.directCollection),
+              ),
+              DropdownMenuItem(
+                value: ProductType.transferReturn,
+                child: Text(ProductType.transferReturn),
               ),
             ],
             onChanged: (value) =>
-                setState(() => _type = value ?? ProductType.sap),
+                setState(() => _type = value ?? ProductType.fieldCollection),
           ),
           const SizedBox(height: 18),
           FilledButton.icon(

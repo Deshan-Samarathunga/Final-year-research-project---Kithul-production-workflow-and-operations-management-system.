@@ -6,7 +6,7 @@ import { asyncHandler, AppError, pagination } from "../utils/http.js";
 
 const router = Router();
 
-const canStatuses = ["In warehouse", "Dispatched", "Lost", "Retired"] as const;
+const canStatuses = ["In warehouse", "Dispatched", "Collected"] as const;
 
 const canSchema = z.object({
   canCode: z.string().trim().min(2).max(40),

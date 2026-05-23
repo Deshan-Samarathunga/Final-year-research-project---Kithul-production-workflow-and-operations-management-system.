@@ -34,7 +34,7 @@ class _SyncStatusScreenState extends ConsumerState<SyncStatusScreen> {
     return Scaffold(
       appBar: const KithulAppBar(
         title: 'Sync Status',
-        subtitle: 'Local WiFi sync',
+        subtitle: 'Cloud sync',
         showBack: true,
       ),
       body: ListView(
@@ -107,7 +107,7 @@ class _SyncStatusScreenState extends ConsumerState<SyncStatusScreen> {
           ),
           const SizedBox(height: 18),
           const Text(
-            'Use the PC IPv4 address from ipconfig, for example http://192.168.1.5:4000. The phone and PC must be on the same WiFi network.',
+            'Data syncs with the KithulFlow cloud server. Make sure your phone has an active internet connection.',
             style: TextStyle(color: kithulMuted, height: 1.4),
           ),
         ],

@@ -21,8 +21,9 @@ class NoteStatus {
 }
 
 class ProductType {
-  static const sap = 'Sap';
-  static const treacle = 'Treacle';
+  static const fieldCollection = 'Field collection';
+  static const directCollection = 'Direct collection';
+  static const transferReturn = 'Transfer return';
 }
 
 @DataClassName('CenterRecord')

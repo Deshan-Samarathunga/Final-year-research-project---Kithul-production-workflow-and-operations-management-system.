@@ -13,7 +13,7 @@ import { PagePanel } from "../components/PagePanel";
 import { Pagination } from "../components/Pagination";
 import { formatDate } from "../utils/format";
 
-const issueTypes = ["Sap", "Treacle", "Field collection", "Direct collection", "Transfer return"];
+const issueTypes = ["Field collection", "Direct collection", "Transfer return"];
 
 function countFor(options: { value: string; count: number }[] | undefined, value: string) {
   return options?.find((option) => option.value === value)?.count ?? 0;
