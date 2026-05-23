@@ -16,7 +16,6 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _serverController = TextEditingController();
   final _userController = TextEditingController(text: 'field01');
   final _passwordController = TextEditingController();
   bool _loading = false;
@@ -25,17 +24,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() async {
-      final savedUrl = await ref.read(authRepositoryProvider).getServerUrl();
-      if (mounted && savedUrl != null) {
-        _serverController.text = savedUrl;
-      }
-    });
   }
 
   @override
   void dispose() {
-    _serverController.dispose();
     _userController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -66,23 +58,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: 10),
                   const Text(
-                    'Enter the PC server address and your Field Collection employee login. Offline work stays on this phone until sync succeeds.',
+                    'Enter your Field Collection employee login. Offline work stays on this phone until sync succeeds.',
                     style: TextStyle(color: kithulMuted, height: 1.4),
                   ),
                   const SizedBox(height: 24),
-                  TextFormField(
-                    controller: _serverController,
-                    keyboardType: TextInputType.url,
-                    decoration: const InputDecoration(
-                      labelText: 'Server URL',
-                      hintText: 'http://192.168.1.5:4000',
-                      prefixIcon: Icon(Icons.wifi_tethering_outlined),
-                    ),
-                    validator: (value) => value == null || value.trim().isEmpty
-                        ? 'Enter the PC server URL'
-                        : null,
-                  ),
-                  const SizedBox(height: 12),
                   TextFormField(
                     controller: _userController,
                     decoration: const InputDecoration(
@@ -110,14 +89,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(height: 18),
                   Row(
                     children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _loading ? null : _testConnection,
-                          icon: const Icon(Icons.network_check),
-                          label: const Text('Test'),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
                       Expanded(
                         child: FilledButton.icon(
                           onPressed: _loading ? null : _login,
@@ -186,35 +157,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  Future<void> _testConnection() async {
-    if (_serverController.text.trim().isEmpty) {
-      setState(() => _message = 'Enter the PC server URL first.');
-      return;
-    }
 
-    setState(() {
-      _loading = true;
-      _message = null;
-    });
-    try {
-      final result = await ref
-          .read(mobileSyncServiceProvider)
-          .testConnection(_serverController.text);
-      if (mounted) {
-        setState(() {
-          _loading = false;
-          _message = result.message;
-        });
-      }
-    } catch (error) {
-      if (mounted) {
-        setState(() {
-          _loading = false;
-          _message = 'Could not reach server: $error';
-        });
-      }
-    }
-  }
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
@@ -228,7 +171,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       await ref
           .read(authRepositoryProvider)
           .login(
-            serverUrl: _serverController.text,
+            serverUrl: 'https://r26-it-078-server.vercel.app',
             userId: _userController.text,
             password: _passwordController.text,
           );
