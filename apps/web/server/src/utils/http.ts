@@ -35,7 +35,8 @@ export function errorHandler(error: unknown, _request: Request, response: Respon
   }
 
   console.error(error);
-  return response.status(500).json({ message: "Internal server error" });
+  const message = error instanceof Error ? error.message : "Internal server error";
+  return response.status(500).json({ message });
 }
 
 export function pagination(query: Request["query"]) {
