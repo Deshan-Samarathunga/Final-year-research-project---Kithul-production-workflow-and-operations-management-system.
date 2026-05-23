@@ -18,6 +18,7 @@ ThemeData buildKithulTheme() {
 
   return ThemeData(
     useMaterial3: true,
+    fontFamily: 'Roboto',
     colorScheme: colorScheme,
     scaffoldBackgroundColor: kithulSurface,
     appBarTheme: const AppBarTheme(

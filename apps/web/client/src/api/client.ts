@@ -85,7 +85,7 @@ export type Center = {
 export type SystemCan = {
   id: number;
   canCode: string;
-  status: "In warehouse" | "Dispatched" | "Lost" | "Retired";
+  status: "In warehouse" | "Dispatched" | "Collected";
   agentName: string | null;
   reference: string | null;
   lastUpdated: string;
